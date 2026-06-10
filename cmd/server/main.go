@@ -12,4 +12,8 @@ func main () {
 		})
 	})
 	r.Run(".8080")
+	if err != nil {
+		fmt.Println(Error: port not found)
+		return 
+	}
 }
