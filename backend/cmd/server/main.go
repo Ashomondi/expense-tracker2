@@ -1,43 +1,54 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"time"
+	"os"
+
+	"backend/config/database"
+	"backend/handlers"
+	"backend/repository"
+	"backend/routes"
+	"backend/services"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
 )
 
-// User Model
-type User struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-var usersDB = []User{}
-var jwtKey = []byte("super_secret_key_123") // Replace with os.Getenv("JWT_SECRET") later
-
 func main() {
-	// Load .env file if it exists
+	// 1. Load Environment Variables from .env file
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using default environment variables")
+		log.Println("Warning: No .env file found, falling back to system environment variables")
 	}
 
-	// Initialize Gin router
+	// 2. Fetch the Secret Key for JWT encryption
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Println("Warning: JWT_SECRET not set, using temporary fallback key")
+		jwtSecret = "super_secret_fallback_key_123"
+	}
+	jwtKey := []byte(jwtSecret)
+
+	// 3. Initialize Database Connection
+	db := database.InitDB() 
+
+	// 4. Instantiate Layers (Dependency Injection)
+	authRepo := repository.NewAuthRepository(db)
+	authService := services.NewAuthService(authRepo, jwtKey)
+	authHandler := handlers.NewAuthHandler(authService)
+
+	// 5. Initialize Gin Engine Router
 	r := gin.Default()
 
-	// Simple CORS Middleware for Gin
+	// 6. Global CORS Middleware (Configured explicitly for HttpOnly Cookies)
 	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		// Replace with your exact frontend domain (e.g., "http://127.0.0.1:5500") 
+		// Wildcard "*" cannot be used when transferring secure HttpOnly cookies.
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500") 
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true") // Crucial for cookie handling
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
 			return
@@ -45,141 +56,22 @@ func main() {
 		c.Next()
 	})
 
-	// Auth Group Routes
-	auth := r.Group("/api")
-	{
-		auth.POST("/register", registerHandler)
-		auth.POST("/login", loginHandler)
+	// 7. Wire up routes from your routes assembly layer
+	routes.SetupRoutes(r, authHandler, jwtKey)
+
+	// 8. Ensure the static file uploads folder exists on startup for avatars
+	if err := os.MkdirAll("./uploads/avatars", os.ModePerm); err != nil {
+		log.Fatalf("Failed to create upload directories: %v", err)
 	}
 
-	fmt.Println("🚀 Go Gin server running on port 5000...")
-	log.Fatal(r.Run(":5000"))
-}
-
-// REGISTER HANDLER
-func registerHandler(c *gin.Context) {
-	var input User
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
+	// 9. Start the Go Web Server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "5000"
 	}
 
-	// Check if user exists
-	for _, u := range usersDB {
-		if u.Email == input.Email {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "User already exists"})
-			return
-		}
-	}
-
-	// Hash password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
-		return
-	}
-
-	newUser := User{
-		ID:       fmt.Sprintf("%d", time.Now().UnixNano()),
-		Name:     input.Name,
-		Email:    input.Email,
-		Password: string(hashedPassword),
-	}
-	usersDB = append(usersDB, newUser)
-
-	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully!"})
-}
-
-// LOGIN HANDLER
-func loginHandler(c *gin.Context) {
-	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	var foundUser *User
-	for _, u := range usersDB {
-		if u.Email == input.Email {
-			foundUser = &u
-			break
-		}
-	}
-
-	if foundUser == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid credentials"})
-		return
-	}
-
-	// Verify Password
-	if err := bcrypt.CompareHashAndPassword([]byte(foundUser.Password), []byte(input.Password)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid credentials"})
-		return
-	}
-
-	// Generate JWT Token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId": foundUser.ID,
-		"name":   foundUser.Name,
-		"exp":    time.Now().Add(time.Hour * 1).Unix(),
-	})
-
-	tokenString, err := token.SignedString(jwtKey)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"token": tokenString,
-		"user": gin.H{
-			"id":    foundUser.ID,
-			"name":  foundUser.Name,
-			"email": foundUser.Email,
-		},
-	})
-}
-
-func authMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
-			c.Abort()
-			return
-		}
-
-		// Expected format: "Bearer <token>"
-		var tokenString string
-		_, err := fmt.Sscanf(authHeader, "Bearer %s", &tokenString)
-		if err != nil || tokenString == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
-			c.Abort()
-			return
-		}
-
-		// Parse and validate the token
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, range) {
-			return jwtKey, nil
-		})
-
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-			c.Abort()
-			return
-		}
-
-		// Extract user data from claims and pass it down to the next handler
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if ok && token.Valid {
-			c.Set("userId", claims["userId"])
-			c.Set("userName", claims["name"])
-		}
-
-		c.Next()
+	log.Printf("🚀 Expense Tracker Backend spinning up on port %s...", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("Failed to run server: %v", err)
 	}
 }
