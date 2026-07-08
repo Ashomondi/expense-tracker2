@@ -1,18 +1,27 @@
-package routes
+package main 
 
 import (
-    "expense-tracker/handlers"
-    "expense-tracker/middleware"
-    "net/http"
+	"expense-tracker/database"
+	"log"
+	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
-func SetupRoutes(authHandler *handlers.AuthHandler, expenseHandler *handlers.ExpenseHandler) *http.ServeMux {
-    mux := http.NewServeMux()
-
-    mux.HandleFunc("/api/register", authHandler.Register)
-    mux.HandleFunc("/api/login", authHandler.Login)
-
-    mux.Handle("/api/expenses", middleware.JWTAuth(http.HandlerFunc(expenseHandler.GetExpenses)))
-
-    return mux
+func main () {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, defaulting to system enviroment variables")
+	}
+	database.ConnectDatabase()
+	r:= gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON((200, gin.H{"message": "pong"}))
+	})
+	port := os.Getenv("PORT")
+	if port == "" {
+	port = 80808
+	}
+	r.Run(":" + port)
 }
+
