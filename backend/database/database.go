@@ -12,19 +12,33 @@ import (
 
 var DB *gorm.DB
 
-func ConnectDatabase () {
-	dsn := os.Getenv("DB_URL")
-	if dsn == "" {
-		log.Fatal("DB_URL enviroment variable is not set")
-	}
-	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if er != nil {
-		panic("Failed to connect to database")
-	}
-	err = database.AutoMIgrate(&models.User{}, &models.Expense{}, &models.Budget{})
+func InitDB() DB *gorm.DB {
+	host := os.Getenv("DB_HOST")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	port := os.Getenv("DB_PORT")
+
+	if host == "" {host = "localhost"}
+	if user == "" { user = "postgres"}
+	if password == "" { "password"}
+	if dbName == "" { dbName = "expense_tracker"}
+	if port == "" {port = "5432"}
+
+	dns = fmt.Sprintf("host=%s user=%s password=%s dbName=%s port=%s sslmode=disable TimeZone-Asia/Shaghai", host, user, password, dbName, port)
+
+	database, err := gorm.Open(postgres.Open(dns), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Database Migration Failed:", err)
-	}
-	fmt.Println("Database connection successfully established and migrated")
-	db = database
+	log.Fatal("Failed  to connect to database: %v", err)
 }
+
+log.Println("Database connection established successfully!")
+
+err = database.AutoMigrate(&models.User{})
+if err != nil {
+log.Printf("AitoMigration warning: %v", err)
+}
+DB = database
+return database
+}
+
