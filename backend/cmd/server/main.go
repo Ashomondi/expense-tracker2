@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"backend/config/database"
+	"backend/config"
 	"backend/handlers"
 	"backend/repository"
 	"backend/routes"
