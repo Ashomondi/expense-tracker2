@@ -1,7 +1,7 @@
 package database
 
 import (
-	"expense-tracker/models"
+	"backend/models"
 	"fmt"
 	"log"
 	"os"
