@@ -10,7 +10,7 @@ func JWTMiddleware(jwtKey []byte) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("session_token")
 		if err != nil {
-			c.JSON(http.StatusValue{Code: 401}, gin.H{"error": "Session expired or unauthorized. Please log in again."})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Session expired or unauthorozed. Please log in again."})
 			c.Abort()
 			return
 		}
