@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"backend/config"
+	"backend/database"
 	"backend/handlers"
 	"backend/repository"
 	"backend/routes"
@@ -42,7 +42,7 @@ func main() {
 
 	// 6. Global CORS Middleware (Configured explicitly for HttpOnly Cookies)
 	r.Use(func(c *gin.Context) {
-		// Replace with your exact frontend domain (e.g., "http://127.0.0.1:5500") 
+// Replace with your exact frontend domain (e.g., "http://127.0.0.1:5500") 
 		// Wildcard "*" cannot be used when transferring secure HttpOnly cookies.
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500") 
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true") // Crucial for cookie handling
@@ -74,4 +74,4 @@ func main() {
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}
-}
+}		
