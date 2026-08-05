@@ -1,11 +1,26 @@
-package models 
+package models
 
-import "gorm.io/gorm"
+import (
+	"time"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+// Expense represents a single expense entry belonging to a user.
 type Expense struct {
-	gorm.Model 
-	UserID uint  `json:"user_id" gorm:"not null"`
-	Title string `json:"title" gorm:"not null"`
-	Amount float64 `json:"amount" gorm:"not null"`
-	Category string `json:"category" gorm:"not null"`
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID    uuid.UUID `gorm:"type:uuid;index;not null" json:"user_id"`
+	Title     string    `gorm:"not null" json:"title"`
+	Amount    float64   `gorm:"not null" json:"amount"`
+	Category  string    `gorm:"index;not null" json:"category"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (e *Expense) BeforeCreate(tx *gorm.DB) (err error) {
+	if e.ID == uuid.Nil {
+		e.ID = uuid.New()
+	}
+	return
 }
