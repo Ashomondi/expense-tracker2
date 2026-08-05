@@ -1,115 +1,91 @@
 package handlers
 
 import (
-	"backend/models"
-	"backend/services"
-	"fmt"
+	"errors"
 	"net/http"
-	"path/filepath"
-	"time"
+
+	"expense-tracker2/backend/services"
+	"expense-tracker2/backend/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
+// AuthHandler groups HTTP handlers for authentication endpoints.
 type AuthHandler struct {
 	service services.AuthService
 }
 
+// NewAuthHandler constructs an AuthHandler.
 func NewAuthHandler(service services.AuthService) *AuthHandler {
 	return &AuthHandler{service: service}
 }
 
-func (h *AuthHandler) Register(c *gin.Context) {
-	var input models.RegisterInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := h.service.Register(input); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"message": "Registration successful"})
+type signupRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
 }
 
+type loginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+// Signup handles POST /signup
+func (h *AuthHandler) Signup(c *gin.Context) {
+	var req signupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Error(c, http.StatusBadRequest, utils.FormatValidationError(err))
+		return
+	}
+
+	result, err := h.service.Signup(services.SignupInput{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	if err != nil {
+		h.respondAuthError(c, err)
+		return
+	}
+
+	utils.Success(c, http.StatusCreated, gin.H{
+		"user":  result.User,
+		"token": result.Token,
+	})
+}
+
+// Login handles POST /login
 func (h *AuthHandler) Login(c *gin.Context) {
-	var input models.LoginInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req loginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Error(c, http.StatusBadRequest, utils.FormatValidationError(err))
 		return
 	}
 
-	user, err := h.service.Login(input)
+	result, err := h.service.Login(services.LoginInput{
+		Email:    req.Email,
+		Password: req.Password,
+	})
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		h.respondAuthError(c, err)
 		return
 	}
 
-	tokenString, err := h.service.GenerateToken(user.ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate session"})
-		return
-	}
-
-	// Attach token directly inside an HttpOnly cookie
-	c.SetCookie("session_token", tokenString, 1800, "/", "", false, true)
-
-	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "user": user})
+	utils.Success(c, http.StatusOK, gin.H{
+		"user":  result.User,
+		"token": result.Token,
+	})
 }
 
-func (h *AuthHandler) Logout(c *gin.Context) {
-	// Erase cookie immediately on client by expiring it
-	c.SetCookie("session_token", "", -1, "/", "", false, true)
-	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
-}
-
-func (h *AuthHandler) GetProfile(c *gin.Context) {
-	uid := c.MustGet("userId").(uint)
-	user, err := h.service.GetProfile(uid)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Profile not found"})
-		return
+// respondAuthError maps known service-layer errors to the right HTTP status.
+func (h *AuthHandler) respondAuthError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, services.ErrEmailTaken):
+		utils.Error(c, http.StatusConflict, err.Error())
+	case errors.Is(err, services.ErrInvalidCredentials):
+		utils.Error(c, http.StatusUnauthorized, err.Error())
+	default:
+		utils.Error(c, http.StatusBadRequest, err.Error())
 	}
-	c.JSON(http.StatusOK, user)
-}
-
-func (h *AuthHandler) UpdateProfile(c *gin.Context) {
-	uid := c.MustGet("userId").(uint)
-	var input models.UpdateProfileInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	updatedUser, err := h.service.UpdateProfile(uid, input)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Update failed"})
-		return
-	}
-	c.JSON(http.StatusOK, updatedUser)
-}
-
-func (h *AuthHandler) UploadAvatar(c *gin.Context) {
-	uid := c.MustGet("userId").(uint)
-	file, err := c.FormFile("avatar")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
-		return
-	}
-
-	newFileName := fmt.Sprintf("avatar_%d_%d%s", uid, time.Now().Unix(), filepath.Ext(file.Filename))
-	savePath := filepath.Join("./uploads/avatars", newFileName)
-
-	if err := c.SaveUploadedFile(file, savePath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-		return
-	}
-
-	webPath := fmt.Sprintf("/uploads/avatars/%s", newFileName)
-	updatedUser, err := h.service.UpdateAvatar(uid, webPath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-		return
-	}
-
-	c.JSON(http.StatusOK, updatedUser)
 }
