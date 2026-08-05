@@ -1,45 +1,66 @@
 package repository
 
 import (
-	"backend/models"
+	"errors"
+
+	"expense-tracker2/backend/models"
+
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+// ErrUserNotFound is returned when no user matches the given lookup.
+var ErrUserNotFound = errors.New("user not found")
+
+// AuthRepository defines data-access operations needed by the auth service.
+// Depending on an interface (rather than *gorm.DB directly) keeps the
+// service layer testable via mocks.
 type AuthRepository interface {
-	CreateUser(user *models.User) error
-	GetUserByEmail(email string) (*models.User, error)
-	GetUserByID(id uint) (*models.User, error)
-	UpdateUser(user *models.User) error
+	FindByEmail(email string) (*models.User, error)
+	FindByID(id uuid.UUID) (*models.User, error)
+	Create(user *models.User) error
+	ExistsByEmail(email string) (bool, error)
 }
 
 type authRepository struct {
 	db *gorm.DB
 }
 
+// NewAuthRepository constructs an AuthRepository backed by GORM.
 func NewAuthRepository(db *gorm.DB) AuthRepository {
 	return &authRepository{db: db}
 }
 
-func (r *authRepository) CreateUser(user *models.User) error {
+func (r *authRepository) FindByEmail(email string) (*models.User, error) {
+	var user models.User
+	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *authRepository) FindByID(id uuid.UUID) (*models.User, error) {
+	var user models.User
+	if err := r.db.Where("id = ?", id).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *authRepository) Create(user *models.User) error {
 	return r.db.Create(user).Error
 }
 
-func (r *authRepository) GetUserByEmail(email string) (*models.User, error) {
-	var user models.User
-	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
-		return nil, err
+func (r *authRepository) ExistsByEmail(email string) (bool, error) {
+	var count int64
+	if err := r.db.Model(&models.User{}).Where("email = ?", email).Count(&count).Error; err != nil {
+		return false, err
 	}
-	return &user, nil
-}
-
-func (r *authRepository) GetUserByID(id uint) (*models.User, error) {
-	var user models.User
-	if err := r.db.First(&user, id).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
-func (r *authRepository) UpdateUser(user *models.User) error {
-	return r.db.Save(user).Error
+	return count > 0, nil
 }
