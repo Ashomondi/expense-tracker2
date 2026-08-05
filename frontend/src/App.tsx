@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LandingPage } from './components/LandingPage';
-import { AuthPage } from './components/AuthPage';
+import { AuthPage } from "./AuthPage";
 
 interface User {
   id: number;
