@@ -1,44 +1,51 @@
-package database
+package config
 
 import (
-	"backend/models"
-	"fmt"
 	"log"
 	"os"
+	"time"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/joho/godotenv"
 )
 
-var DB *gorm.DB
-
-func InitDB() DB *gorm.DB {
-	host := os.Getenv("DB_HOST")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-	port := os.Getenv("DB_PORT")
-
-	if host == "" {host = "localhost"}
-	if user == "" { user = "postgres"}
-	if password == "" { "password"}
-	if dbName == "" { dbName = "expense_tracker"}
-	if port == "" {port = "5432"}
-
-	dns = fmt.Sprintf("host=%s user=%s password=%s dbName=%s port=%s sslmode=disable TimeZone-Asia/Shaghai", host, user, password, dbName, port)
-
-	database, err := gorm.Open(postgres.Open(dns), &gorm.Config{})
-	if err != nil {
-	log.Fatal("Failed  to connect to database: %v", err)
+// Config holds all runtime configuration for the application, loaded
+// once at startup from environment variables (and .env in local dev).
+type Config struct {
+	Port          string
+	DBUrl         string
+	JWTSecret     string
+	JWTExpiration time.Duration
 }
 
-log.Println("Database connection established successfully!")
+// Load reads .env (if present) and environment variables into a Config.
+// It fails fast if a required variable is missing, so misconfiguration
+// is caught at boot rather than on the first request that needs it.
+func Load() *Config {
+	if err := godotenv.Load(); err != nil {
+		log.Println("no .env file found, relying on environment variables")
+	}
 
-err = database.AutoMigrate(&models.User{})
-if err != nil {
-log.Printf("AitoMigration warning: %v", err)
-}
-DB = database
-return database
+	cfg := &Config{
+		Port:          getEnv("PORT", "8080"),
+		DBUrl:         mustGetEnv("DB_URL"),
+		JWTSecret:     mustGetEnv("JWT_SECRET"),
+		JWTExpiration: 24 * time.Hour,
+	}
+
+	return cfg
 }
 
+func getEnv(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return fallback
+}
+
+func mustGetEnv(key string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		log.Fatalf("required environment variable %s is not set", key)
+	}
+	return val
+}
