@@ -1,29 +1,33 @@
 package routes
 
 import (
-	"backend/handlers"
-	"backend/middleware"
+	"net/http"
+
+	"expense-tracker2/backend/handlers"
+	"expense-tracker2/backend/middleware"
+
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *gin.Engine, authHandler *handlers.AuthHandler, jwtKey []byte) {
-	// Expose files inside the uploads folder to the public web browser context
-	r.Static("/uploads", "./uploads")
+// Dependencies bundles everything routes.Setup needs to wire handlers.
+// As expenses/budgets/dashboard handlers are implemented, add their
+// constructed instances here rather than reaching into globals.
+type Dependencies struct {
+	AuthHandler *handlers.AuthHandler
+	JWTSecret   string
+}
 
-	// Public Authentication routes
-	auth := r.Group("/api/auth")
-	{
-		auth.POST("/register", authHandler.Register)
-		auth.POST("/login", authHandler.Login)
-		auth.POST("/logout", authHandler.Logout)
-	}
+func Setup(router *gin.Engine, deps Dependencies) {
+	router.Use(middleware.Logger())
+	router.Use(middleware.CORS())
 
-	// Protected Profile/Settings Management routes
-	user := r.Group("/api/user")
-	user.Use(middleware.JWTMiddleware(jwtKey))
-	{
-		user.GET("/profile", authHandler.GetProfile)
-		user.PUT("/profile", authHandler.UpdateProfile)
-		user.POST("/avatar", authHandler.UploadAvatar)
-	}
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Public auth routes
+	router.POST("/signup", deps.AuthHandler.Signup)
+	router.POST("/login", deps.AuthHandler.Login)
+
+	
 }
