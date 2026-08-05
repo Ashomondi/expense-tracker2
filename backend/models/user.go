@@ -1,32 +1,25 @@
 package models
 
-import "time"
+import (
+	"time"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+// User represents an application user.
 type User struct {
-	ID            uint      `json:"id" gorm:"primaryKey"`
-	Name          string    `json:"name" binding:"required"`
-	Email         string    `json:"email" binding:"required,email" gorm:"unique"`
-	Password      string    `json:"-"` // Cryptographic hash, hidden from JSON responses
-	Currency      string    `json:"currency" gorm:"default:'USD'"`
-	MonthlyBudget float64   `json:"monthly_budget" gorm:"default:0.0"`
-	AvatarURL     string    `json:"avatar_url" gorm:"default:'/uploads/avatars/default-avatar.png'"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Name      string    `gorm:"not null" json:"name"`
+	Email     string    `gorm:"uniqueIndex;not null" json:"email"`
+	Password  string    `gorm:"not null" json:"-"` // never expose the hash in JSON
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type RegisterInput struct {
-	Name     string `json:"name" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
-}
-
-type LoginInput struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-}
-
-type UpdateProfileInput struct {
-	Name          string  `json:"name"`
-	Currency      string  `json:"currency"`
-	MonthlyBudget float64 `json:"monthly_budget"`
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.ID == uuid.Nil {
+		u.ID = uuid.New()
+	}
+	return
 }
