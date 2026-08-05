@@ -1,88 +1,128 @@
 package services
 
 import (
-	"backend/models"
-	"backend/repository"
 	"errors"
+	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
+	"expense-tracker2/backend/models"
+	"expense-tracker2/backend/repository"
+	"expense-tracker2/backend/utils"
 )
 
+// ErrEmailTaken is returned when signing up with an email already in use.
+var ErrEmailTaken = errors.New("an account with this email already exists")
+
+// ErrInvalidCredentials is returned for both "no such user" and "wrong
+// password" cases on login, so callers never leak which emails exist.
+var ErrInvalidCredentials = errors.New("invalid email or password")
+
+// SignupInput is the data required to create a new account.
+type SignupInput struct {
+	Name     string
+	Email    string
+	Password string
+}
+
+// LoginInput is the data required to authenticate.
+type LoginInput struct {
+	Email    string
+	Password string
+}
+
+// AuthResult is returned on successful signup/login.
+type AuthResult struct {
+	User  *models.User
+	Token string
+}
+
+// AuthService defines the auth business logic exposed to handlers.
 type AuthService interface {
-	Register(input models.RegisterInput) error
-	Login(input models.LoginInput) (*models.User, error)
-	GenerateToken(userID uint) (string, error)
-	GetProfile(userID uint) (*models.User, error)
-	UpdateProfile(userID uint, input models.UpdateProfileInput) (*models.User, error)
-	UpdateAvatar(userID uint, avatarPath string) (*models.User, error)
+	Signup(input SignupInput) (*AuthResult, error)
+	Login(input LoginInput) (*AuthResult, error)
 }
 
 type authService struct {
-	repo   repository.AuthRepository
-	jwtKey []byte
+	repo          repository.AuthRepository
+	jwtSecret     string
+	jwtExpiration time.Duration
 }
 
-func NewAuthService(repo repository.AuthRepository, jwtKey []byte) AuthService {
-	return &authService{repo: repo, jwtKey: jwtKey}
+// NewAuthService constructs an AuthService. jwtSecret/jwtExpiration come
+// from config, injected at startup rather than read from env here, so the
+// service stays easy to unit test.
+func NewAuthService(repo repository.AuthRepository, jwtSecret string, jwtExpiration time.Duration) AuthService {
+	return &authService{
+		repo:          repo,
+		jwtSecret:     jwtSecret,
+		jwtExpiration: jwtExpiration,
+	}
 }
 
-func (s *authService) Register(input models.RegisterInput) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
+func (s *authService) Signup(input SignupInput) (*AuthResult, error) {
+	email := normalizeEmail(input.Email)
+
+	if !utils.IsValidEmail(email) {
+		return nil, errors.New("invalid email address")
+	}
+	if !utils.IsStrongPassword(input.Password) {
+		return nil, errors.New("password must be at least 8 characters and include a letter and a number")
 	}
 
-	user := models.User{
-		Name:     input.Name,
-		Email:    input.Email,
-		Password: string(hashedPassword),
-	}
-	return s.repo.CreateUser(&user)
-}
-
-func (s *authService) Login(input models.LoginInput) (*models.User, error) {
-	user, err := s.repo.GetUserByEmail(input.Email)
-	if err != nil {
-		return nil, errors.New("invalid email or password")
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
-		return nil, errors.New("invalid email or password")
-	}
-	return user, nil
-}
-
-func (s *authService) GenerateToken(userID uint) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId": userID,
-		"exp":    time.Now().Add(time.Minute * 30).Unix(), // Auto-logout after 30 minutes of inactivity
-	})
-	return token.SignedString(s.jwtKey)
-}
-
-func (s *authService) GetProfile(userID uint) (*models.User, error) {
-	return s.repo.GetUserByID(userID)
-}
-
-func (s *authService) UpdateProfile(userID uint, input models.UpdateProfileInput) (*models.User, error) {
-	user, err := s.repo.GetUserByID(userID)
+	exists, err := s.repo.ExistsByEmail(email)
 	if err != nil {
 		return nil, err
 	}
-	if input.Name != "" { user.Name = input.Name }
-	if input.Currency != "" { user.Currency = input.Currency }
-	if input.MonthlyBudget >= 0 { user.MonthlyBudget = input.MonthlyBudget }
+	if exists {
+		return nil, ErrEmailTaken
+	}
 
-	return user, s.repo.UpdateUser(user)
-}
-
-func (s *authService) UpdateAvatar(userID uint, avatarPath string) (*models.User, error) {
-	user, err := s.repo.GetUserByID(userID)
+	hashed, err := utils.HashPassword(input.Password)
 	if err != nil {
 		return nil, err
 	}
-	user.AvatarURL = avatarPath
-	return user, s.repo.UpdateUser(user)
+
+	user := &models.User{
+		Name:     strings.TrimSpace(input.Name),
+		Email:    email,
+		Password: hashed,
+	}
+
+	if err := s.repo.Create(user); err != nil {
+		return nil, err
+	}
+
+	token, err := utils.GenerateJWT(user.ID, s.jwtSecret, s.jwtExpiration)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthResult{User: user, Token: token}, nil
+}
+
+func (s *authService) Login(input LoginInput) (*AuthResult, error) {
+	email := normalizeEmail(input.Email)
+
+	user, err := s.repo.FindByEmail(email)
+	if err != nil {
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return nil, ErrInvalidCredentials
+		}
+		return nil, err
+	}
+
+	if !utils.CheckPasswordHash(input.Password, user.Password) {
+		return nil, ErrInvalidCredentials
+	}
+
+	token, err := utils.GenerateJWT(user.ID, s.jwtSecret, s.jwtExpiration)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthResult{User: user, Token: token}, nil
+}
+
+func normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
 }
