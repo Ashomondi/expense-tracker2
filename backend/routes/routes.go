@@ -1,33 +1,47 @@
-package routes
+package main
 
 import (
-	"net/http"
+	"log"
 
+	"expense-tracker2/backend/config"
+	"expense-tracker2/backend/database"
 	"expense-tracker2/backend/handlers"
-	"expense-tracker2/backend/middleware"
+	"expense-tracker2/backend/repository"
+	"expense-tracker2/backend/routes"
+	"expense-tracker2/backend/services"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Dependencies bundles everything routes.Setup needs to wire handlers.
-// As expenses/budgets/dashboard handlers are implemented, add their
-// constructed instances here rather than reaching into globals.
-type Dependencies struct {
-	AuthHandler *handlers.AuthHandler
-	JWTSecret   string
-}
+func main() {
+	cfg := config.Load()
 
-func Setup(router *gin.Engine, deps Dependencies) {
-	router.Use(middleware.Logger())
-	router.Use(middleware.CORS())
+	db, err := database.Connect(cfg)
+	if err != nil {
+		log.Fatalf("database initialization failed: %v", err)
+	}
 
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	// Wire the auth vertical: repository -> service -> handler.
+	authRepo := repository.NewAuthRepository(db)
+	authService := services.NewAuthService(authRepo, cfg.JWTSecret, cfg.JWTExpiration)
+	authHandler := handlers.NewAuthHandler(authService)
+
+	// Wire the expense vertical: repository -> service -> handler.
+	expenseRepo := repository.NewExpenseRepository(db)
+	expenseService := services.NewExpenseService(expenseRepo)
+	expenseHandler := handlers.NewExpenseHandler(expenseService)
+
+	router := gin.New()
+	router.Use(gin.Recovery())
+
+	routes.Setup(router, routes.Dependencies{
+		AuthHandler:    authHandler,
+		ExpenseHandler: expenseHandler,
+		JWTSecret:      cfg.JWTSecret,
 	})
 
-	// Public auth routes
-	router.POST("/signup", deps.AuthHandler.Signup)
-	router.POST("/login", deps.AuthHandler.Login)
-
-	
+	log.Printf("server starting on :%s", cfg.Port)
+	if err := router.Run(":" + cfg.Port); err != nil {
+		log.Fatalf("server failed to start: %v", err)
+	}
 }

@@ -1,41 +1,56 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 
-	"expense-tracker2/backend/config"
-	"expense-tracker2/backend/database"
-	"expense-tracker2/backend/handlers"
-	"expense-tracker2/backend/repository"
-	"expense-tracker2/backend/routes"
-	"expense-tracker2/backend/services"
+	"backend/handlers"
+	"backend/models"
 
-	"github.com/gin-gonic/gin"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func main() {
-	cfg := config.Load()
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 
-	db, err := database.Connect(cfg)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func main() {
+	// Initialize SQLite Database
+	db, err := gorm.Open(sqlite.Open("spendly.db"), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("database initialization failed: %v", err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// Wire the auth vertical: repository -> service -> handler.
-	authRepo := repository.NewAuthRepository(db)
-	authService := services.NewAuthService(authRepo, cfg.JWTSecret, cfg.JWTExpiration)
-	authHandler := handlers.NewAuthHandler(authService)
+	// Auto Migrate User Model
+	db.AutoMigrate(&models.User{})
 
-	router := gin.New()
-	router.Use(gin.Recovery())
+	jwtKey := []byte("spendly_secret_jwt_key_2026")
+	authHandler := handlers.NewAuthHandler(db, jwtKey)
 
-	routes.Setup(router, routes.Dependencies{
-		AuthHandler: authHandler,
-		JWTSecret:   cfg.JWTSecret,
-	})
+	mux := http.NewServeMux()
 
-	log.Printf("server starting on :%s", cfg.Port)
-	if err := router.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("server failed to start: %v", err)
+	// Auth Routes
+	mux.HandleFunc("/api/signup", authHandler.SignUp)
+	mux.HandleFunc("/api/login", authHandler.Login)
+	mux.HandleFunc("/api/logout", authHandler.Logout)
+	mux.HandleFunc("/api/me", authHandler.GetMe)
+
+	fmt.Println("🚀 Go Backend running at http://localhost:8080")
+	if err := http.ListenAndServe(":8080", enableCORS(mux)); err != nil {
+		log.Fatal(err)
 	}
 }
