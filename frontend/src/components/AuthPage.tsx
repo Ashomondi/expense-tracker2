@@ -14,9 +14,26 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // 🔒 Password requirement checks
+  const passwordRules = {
+    length: password.length >= 8,
+    letter: /[a-zA-Z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
+  };
+
+  const isPasswordValid = Object.values(passwordRules).every(Boolean);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Pre-flight check during signup
+    if (mode === 'signup' && !isPasswordValid) {
+      setError('Please fulfill all password requirements before creating your account.');
+      return;
+    }
+
     setLoading(true);
 
     const endpoint = mode === 'signup' ? '/api/signup' : '/api/login';
@@ -164,12 +181,30 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
+
+              {/* Live Password Hints (Signup only) */}
+              {mode === 'signup' && password.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                  <span className={passwordRules.length ? 'text-brand-green' : 'text-text-muted'}>
+                    {passwordRules.length ? '✓' : '○'} Min 8 characters
+                  </span>
+                  <span className={passwordRules.letter ? 'text-brand-green' : 'text-text-muted'}>
+                    {passwordRules.letter ? '✓' : '○'} At least 1 letter
+                  </span>
+                  <span className={passwordRules.number ? 'text-brand-green' : 'text-text-muted'}>
+                    {passwordRules.number ? '✓' : '○'} At least 1 number
+                  </span>
+                  <span className={passwordRules.special ? 'text-brand-green' : 'text-text-muted'}>
+                    {passwordRules.special ? '✓' : '○'} Special character (!@#$)
+                  </span>
+                </div>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-brand-green text-black font-semibold rounded-lg hover:bg-brand-hover transition-colors text-sm mt-4 disabled:opacity-50"
+              disabled={loading || (mode === 'signup' && !isPasswordValid)}
+              className="w-full py-3.5 bg-brand-green text-black font-semibold rounded-lg hover:bg-brand-hover transition-colors text-sm mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Processing...' : mode === 'signup' ? 'Create Account' : 'Sign In'}
             </button>
