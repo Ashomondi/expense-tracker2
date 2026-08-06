@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
-import { ExpensesPage } from './components/ExpensePage';
+import { ExpensesPage } from './components/ExpensesPage';
+import { BudgetsPage } from './components/BudgetsPage';
 
 interface User {
   id: number;
@@ -14,7 +15,9 @@ export const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<'landing' | 'auth'>('landing');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses'>('dashboard');
+  
+  // 1. Updated activeTab state to include 'budgets'
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'budgets'>('dashboard');
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
@@ -59,7 +62,7 @@ export const App: React.FC = () => {
   if (user) {
     return (
       <div className="flex min-h-screen bg-[#0E1310] text-white">
-        {/* SINGLE Sidebar here */}
+        {/* Sidebar */}
         <aside className="w-64 border-r border-white/10 p-6 flex flex-col justify-between shrink-0">
           <div>
             <h1 className="text-2xl font-bold text-[#10B981] mb-8">Spendly</h1>
@@ -80,6 +83,16 @@ export const App: React.FC = () => {
               >
                 Expenses
               </button>
+
+              {/* 2. Added Budgets Nav Link */}
+              <button
+                onClick={() => setActiveTab('budgets')}
+                className={`w-full text-left px-4 py-3 font-semibold rounded-lg transition-colors ${
+                  activeTab === 'budgets' ? 'bg-[#10B981] text-black' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Budgets
+              </button>
             </nav>
           </div>
 
@@ -94,13 +107,11 @@ export const App: React.FC = () => {
           </div>
         </aside>
 
-        {/* Dynamic Main View */}
+        {/* 3. Dynamic Main View with Budgets Page */}
         <div className="flex-1 overflow-y-auto">
-          {activeTab === 'dashboard' ? (
-            <Dashboard user={user} onLogout={handleLogout} />
-          ) : (
-            <ExpensesPage onAddExpenseClick={() => setActiveTab('dashboard')} />
-          )}
+          {activeTab === 'dashboard' && <Dashboard user={user} onLogout={handleLogout} />}
+          {activeTab === 'expenses' && <ExpensesPage onAddExpenseClick={() => setActiveTab('dashboard')} />}
+          {activeTab === 'budgets' && <BudgetsPage />}
         </div>
       </div>
     );
