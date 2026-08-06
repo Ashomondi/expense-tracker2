@@ -17,7 +17,7 @@ func NewBudgetHandler(db *gorm.DB, jwtKey []byte) *BudgetHandler {
 }
 
 func (h *BudgetHandler) GetBudgets(w http.ResponseWriter, r *http.Request) {
-	user, err := h.getUserFromCookie(r) // Use your cookie auth helper
+	user, err := GetUserFromCookie(r, h.DB, h.JWTKey)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -31,7 +31,7 @@ func (h *BudgetHandler) GetBudgets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BudgetHandler) SetBudget(w http.ResponseWriter, r *http.Request) {
-	user, err := h.getUserFromCookie(r)
+	user, err := GetUserFromCookie(r, h.DB, h.JWTKey)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
