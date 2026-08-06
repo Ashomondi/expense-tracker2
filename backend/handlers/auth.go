@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"backend/models"
+	"backend/utils"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -178,31 +179,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 // GetMe Endpoint (Check current session)
 func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("spendly_token")
+	user, err := utils.GetUserFromCookie(r, h.DB, h.JWTKey)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthenticated"})
-		return
-	}
-
-	claims := &jwt.RegisteredClaims{}
-	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
-		return h.JWTKey, nil
-	})
-
-	if err != nil || !token.Valid {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid session token"})
-		return
-	}
-
-	var user models.User
-	if err := h.DB.Where("email = ?", claims.Subject).First(&user).Error; err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{"error": "User not found"})
 		return
 	}
 
