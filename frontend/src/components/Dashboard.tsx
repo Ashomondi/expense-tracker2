@@ -23,14 +23,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Food & Drink');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Fetch Expenses on Load
   const fetchExpenses = async () => {
     try {
       const res = await fetch('/api/expenses');
@@ -49,7 +47,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     fetchExpenses();
   }, []);
 
-  // Handle Adding Expense
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -68,7 +65,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         setIsModalOpen(false);
         setTitle('');
         setAmount('');
-        fetchExpenses(); // Refresh list
+        fetchExpenses();
       }
     } catch (err) {
       console.error('Failed to add expense', err);
