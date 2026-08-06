@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+	"unicode"
 
 	"backend/models"
 
@@ -21,6 +22,32 @@ func NewAuthHandler(db *gorm.DB, jwtKey []byte) *AuthHandler {
 	return &AuthHandler{DB: db, JWTKey: jwtKey}
 }
 
+// isValidPassword checks: min 8 chars, at least 1 letter, 1 number, and 1 special character
+func isValidPassword(password string) bool {
+	if len(password) < 8 {
+		return false
+	}
+
+	var (
+		hasLetter  bool
+		hasNumber  bool
+		hasSpecial bool
+	)
+
+	for _, char := range password {
+		switch {
+		case unicode.IsLetter(char):
+			hasLetter = true
+		case unicode.IsNumber(char):
+			hasNumber = true
+		case unicode.IsPunct(char) || unicode.IsSymbol(char):
+			hasSpecial = true
+		}
+	}
+
+	return hasLetter && hasNumber && hasSpecial
+}
+
 // SignUp Endpoint
 func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -33,6 +60,16 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request payload"})
+		return
+	}
+
+	// 🔒 Validate Password Complexity
+	if !isValidPassword(input.Password) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Password must be at least 8 characters long and contain at least one letter, one number, and one special character.",
+		})
 		return
 	}
 
