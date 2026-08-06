@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE } from '../api';
 
 interface AuthPageProps {
   mode: 'login' | 'signup';
@@ -42,7 +43,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
       : { email, password };
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -9,7 +9,8 @@ import (
 	"backend/handlers"
 	"backend/models"
 
-	"gorm.io/driver/sqlite" // Swap with gorm.io/driver/postgres if using PostgreSQL
+	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +18,11 @@ import (
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Adjust Origin URL in production
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		frontendURL := os.Getenv("FRONTEND_URL")
+		if frontendURL == "" {
+			frontendURL = "http://localhost:5173"
+		}
+		w.Header().Set("Access-Control-Allow-Origin", frontendURL)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -40,7 +45,17 @@ func main() {
 	jwtKey := []byte(jwtSecret)
 
 	// 2. Initialize Database (SQLite for development / change to Postgres for prod)
-	db, err := gorm.Open(sqlite.Open("spendly.db"), &gorm.Config{})
+	var db *gorm.DB
+	var err error
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL != "" {
+		log.Println("Connecting to PostgreSQL database...")
+		db, err = gorm.Open(postgres.Open(dbURL), &gorm.Config{})
+	} else {
+		log.Println("Connecting to SQLite database...")
+		db, err = gorm.Open(sqlite.Open("spendly.db"), &gorm.Config{})
+	}
+	
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

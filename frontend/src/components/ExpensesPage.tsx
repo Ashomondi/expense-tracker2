@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 
 interface Expense {
   id: number;
@@ -41,7 +42,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ onAddExpenseClick })
 
   const fetchExpenses = async () => {
     try {
-      const res = await fetch('/api/expenses');
+      const res = await fetch(`${API_BASE}/api/expenses`);
       if (res.ok) {
         const data = await res.json();
         setExpenses(data || []);
@@ -59,7 +60,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ onAddExpenseClick })
 
   const handleDelete = async (id: number) => {
     try {
-      const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/expenses/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setExpenses((prev) => prev.filter((item) => item.id !== id));
       }

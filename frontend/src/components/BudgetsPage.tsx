@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 
 interface Expense {
   id: number;
@@ -42,8 +43,8 @@ export const BudgetsPage: React.FC = () => {
     const fetchData = async () => {
       try {
         const [expRes, budRes] = await Promise.all([
-          fetch('/api/expenses'),
-          fetch('/api/budgets'),
+          fetch(`${API_BASE}/api/expenses`),
+          fetch(`${API_BASE}/api/budgets`),
         ]);
 
         if (expRes.ok) {
@@ -94,7 +95,7 @@ export const BudgetsPage: React.FC = () => {
     if (isNaN(amount) || amount <= 0) return;
 
     try {
-      const res = await fetch('/api/budgets', {
+      const res = await fetch(`${API_BASE}/api/budgets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: selectedCategory, amount }),
