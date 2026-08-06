@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"backend/models"
+	"backend/utils"
 
-	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
@@ -20,32 +20,9 @@ func NewExpenseHandler(db *gorm.DB, jwtKey []byte) *ExpenseHandler {
 	return &ExpenseHandler{DB: db, JWTKey: jwtKey}
 }
 
-// Helper to extract authenticated user from cookie
-func (h *ExpenseHandler) getUserFromCookie(r *http.Request) (*models.User, error) {
-	cookie, err := r.Cookie("spendly_token")
-	if err != nil {
-		return nil, err
-	}
-
-	claims := &jwt.RegisteredClaims{}
-	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
-		return h.JWTKey, nil
-	})
-	if err != nil || !token.Valid {
-		return nil, err
-	}
-
-	var user models.User
-	if err := h.DB.Where("email = ?", claims.Subject).First(&user).Error; err != nil {
-		return nil, err
-	}
-
-	return &user, nil
-}
-
 // Get User's Expenses
 func (h *ExpenseHandler) GetExpenses(w http.ResponseWriter, r *http.Request) {
-	user, err := h.getUserFromCookie(r)
+	user, err := utils.GetUserFromCookie(r, h.DB, h.JWTKey)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
@@ -61,7 +38,7 @@ func (h *ExpenseHandler) GetExpenses(w http.ResponseWriter, r *http.Request) {
 
 // Create New Expense
 func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
-	user, err := h.getUserFromCookie(r)
+	user, err := utils.GetUserFromCookie(r, h.DB, h.JWTKey)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})

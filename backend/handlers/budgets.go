@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"backend/models"
+	"backend/utils"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +18,7 @@ func NewBudgetHandler(db *gorm.DB, jwtKey []byte) *BudgetHandler {
 }
 
 func (h *BudgetHandler) GetBudgets(w http.ResponseWriter, r *http.Request) {
-	user, err := GetUserFromCookie(r, h.DB, h.JWTKey)
+	user, err := utils.GetUserFromCookie(r, h.DB, h.JWTKey)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -31,7 +32,7 @@ func (h *BudgetHandler) GetBudgets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BudgetHandler) SetBudget(w http.ResponseWriter, r *http.Request) {
-	user, err := GetUserFromCookie(r, h.DB, h.JWTKey)
+	user, err := utils.GetUserFromCookie(r, h.DB, h.JWTKey)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
