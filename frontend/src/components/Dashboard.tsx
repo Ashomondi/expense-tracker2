@@ -20,32 +20,88 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
+const CATEGORIES = ['Food & Drink', 'Transport', 'Entertainment', 'Utilities', 'Health', 'Shopping'];
+
 export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchExpenses = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/expenses`);
-        if (res.ok) {
-          const data = await res.json();
-          setExpenses(data || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch expenses:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Modal & Form State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('Food & Drink');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
+  // Fetch Expenses with Cookie Credentials
+  const fetchExpenses = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/expenses', {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setExpenses(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch expenses:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchExpenses();
   }, []);
+
+  // Handle Form Submission
+  const handleCreateExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setError('Please enter a valid amount.');
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:8080/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Sends spendly_token cookie
+        body: JSON.stringify({
+          title,
+          amount: parsedAmount,
+          category,
+          date,
+        }),
+      });
+
+      if (res.ok) {
+        setTitle('');
+        setAmount('');
+        setIsModalOpen(false);
+        fetchExpenses(); // Refresh expense list and total spent
+      } else {
+        const errData = await res.json();
+        setError(errData.error || 'Failed to add expense');
+      }
+    } catch (err) {
+      setError('Server error. Make sure your Go backend is running.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const totalSpent = expenses.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <main className="p-8 max-w-5xl mx-auto">
+    <main className="p-8 max-w-5xl mx-auto relative">
       {/* Top Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -56,7 +112,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             Good day, {user.full_name.split(' ')[0]}
           </h1>
         </div>
-        <button className="px-5 py-2.5 bg-[#10B981] text-black font-semibold rounded-lg hover:bg-[#059669] transition-colors">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-5 py-2.5 bg-[#10B981] text-black font-semibold rounded-lg hover:bg-[#059669] transition-colors cursor-pointer"
+        >
           + Add Expense
         </button>
       </div>
@@ -106,6 +165,106 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           </div>
         )}
       </div>
+
+      {/* ================= ADD EXPENSE MODAL ================= */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#141B17] border border-white/10 text-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Add New Expense</h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-white text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-950/50 border border-red-500/50 text-red-400 rounded-lg text-xs font-semibold">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateExpense} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Grocery Shopping"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Amount ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Category
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat} className="bg-[#141B17] text-white">
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full p-2.5 bg-black/40 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-white/10 rounded-lg text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-[#10B981] text-black font-semibold rounded-lg hover:bg-[#059669] text-sm transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? 'Saving...' : 'Save Expense'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
