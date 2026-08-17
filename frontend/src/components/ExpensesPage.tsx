@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE } from '../api';
 
 interface Expense {
   id: number;
@@ -9,46 +8,33 @@ interface Expense {
   date: string;
 }
 
-interface ExpensesPageProps {
-  onAddExpenseClick: () => void;
-}
+const CATEGORIES = ['Food & Drink', 'Transport', 'Entertainment', 'Utilities', 'Health', 'Shopping'];
 
-const CATEGORIES = ['All', 'Food & Drink', 'Transport', 'Entertainment', 'Utilities', 'Health', 'Shopping'];
-
-const getCategoryBadgeStyle = (category: string) => {
-  switch (category) {
-    case 'Food & Drink':
-      return 'bg-amber-100 text-amber-800';
-    case 'Transport':
-      return 'bg-blue-100 text-blue-800';
-    case 'Entertainment':
-      return 'bg-purple-100 text-purple-800';
-    case 'Utilities':
-      return 'bg-cyan-100 text-cyan-800';
-    case 'Health':
-      return 'bg-rose-100 text-rose-800';
-    case 'Shopping':
-      return 'bg-orange-100 text-orange-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-export const ExpensesPage: React.FC<ExpensesPageProps> = ({ onAddExpenseClick }) => {
+export const ExpensesPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
 
+  // Form / Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('Food & Drink');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // Fetch Expenses
   const fetchExpenses = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/expenses`);
+      const res = await fetch('http://localhost:8080/api/expenses', {
+        credentials: 'include',
+      });
       if (res.ok) {
         const data = await res.json();
         setExpenses(data || []);
       }
     } catch (err) {
-      console.error('Failed to load expenses', err);
+      console.error('Failed to fetch expenses:', err);
     } finally {
       setLoading(false);
     }
@@ -58,125 +44,192 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ onAddExpenseClick })
     fetchExpenses();
   }, []);
 
-  const handleDelete = async (id: number) => {
+  // Handle Form Submit
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setError('Please enter a valid amount.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/api/expenses/${id}`, { method: 'DELETE' });
+      const res = await fetch('http://localhost:8080/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title,
+          amount: parsedAmount,
+          category,
+          date,
+        }),
+      });
+
       if (res.ok) {
-        setExpenses((prev) => prev.filter((item) => item.id !== id));
+        setTitle('');
+        setAmount('');
+        setIsModalOpen(false);
+        fetchExpenses(); // Refresh list immediately
+      } else {
+        const errData = await res.json();
+        setError(errData.error || 'Failed to add expense');
       }
     } catch (err) {
-      console.error('Failed to delete expense', err);
+      setError('Server error. Check backend connection.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const filteredExpenses = expenses.filter((exp) => {
-    const matchesSearch = exp.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || exp.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const totalAmount = filteredExpenses.reduce((sum, item) => sum + item.amount, 0);
-
   return (
-    <div className="flex-1 p-8 bg-[#F3F6F4] text-slate-900 overflow-y-auto min-h-screen">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-8 max-w-5xl mx-auto text-slate-900 bg-[#F3F6F4] min-h-screen">
+      {/* Header with Add Expense Button */}
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <span className="text-xs font-semibold tracking-wider text-gray-400 uppercase">EXPENSES</span>
-          <h2 className="text-3xl font-serif font-bold text-slate-900">All Transactions</h2>
+          <span className="text-xs uppercase font-semibold tracking-wider text-gray-400">
+            TRANSACTIONS
+          </span>
+          <h1 className="text-4xl font-serif font-bold text-slate-900 mt-1">Expenses</h1>
         </div>
         <button
-          onClick={onAddExpenseClick}
-          className="px-5 py-2.5 bg-[#10B981] text-black font-semibold rounded-lg hover:bg-[#059669] transition-colors flex items-center gap-2"
+          onClick={() => setIsModalOpen(true)}
+          className="px-5 py-2.5 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] transition-colors cursor-pointer"
         >
-          <span>+</span> Add Expense
+          + Add Expense
         </button>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm flex flex-wrap gap-4 items-center justify-between">
-        <div className="relative flex-1 min-w-[240px]">
-          <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
-          <input
-            type="text"
-            placeholder="Search expenses..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#10B981]"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                selectedCategory === cat
-                  ? 'bg-[#10B981] text-black font-bold'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
-          <span className="text-xs font-semibold text-gray-500">
-            {filteredExpenses.length} transaction{filteredExpenses.length === 1 ? '' : 's'}
-          </span>
-          <span className="text-lg font-bold text-slate-900">${totalAmount.toFixed(2)}</span>
-        </div>
+      {/* Expense List Table / Card */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <h2 className="text-lg font-bold text-slate-900 mb-4">All Expenses</h2>
 
         {loading ? (
-          <p className="text-gray-400 text-sm py-8 text-center">Loading expenses...</p>
-        ) : filteredExpenses.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400 text-sm mb-4">No transactions found.</p>
-          </div>
+          <p className="text-gray-400 text-sm">Loading expenses...</p>
+        ) : expenses.length === 0 ? (
+          <p className="text-gray-400 text-sm py-4">No expenses recorded yet.</p>
         ) : (
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="text-xs uppercase text-gray-400 font-mono border-b border-gray-100">
-                <th className="py-3 font-normal">Description</th>
-                <th className="py-3 font-normal">Category</th>
-                <th className="py-3 font-normal">Date</th>
-                <th className="py-3 font-normal text-right">Amount</th>
-                <th className="py-3 font-normal text-right"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredExpenses.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="py-4 font-semibold text-slate-800">{item.title}</td>
-                  <td className="py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getCategoryBadgeStyle(item.category)}`}>
-                      {item.category}
-                    </span>
-                  </td>
-                  <td className="py-4 text-gray-500 text-xs">
-                    {new Date(item.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </td>
-                  <td className="py-4 font-bold text-right text-slate-900">${item.amount.toFixed(2)}</td>
-                  <td className="py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="text-gray-300 hover:text-red-500 text-sm transition-colors px-2"
-                      title="Delete expense"
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="divide-y divide-gray-100">
+            {expenses.map((expense) => (
+              <div key={expense.id} className="py-3.5 flex justify-between items-center">
+                <div>
+                  <p className="font-semibold text-slate-900">{expense.title}</p>
+                  <p className="text-xs text-gray-400">
+                    {expense.category} • {expense.date}
+                  </p>
+                </div>
+                <div className="font-bold text-rose-500">
+                  -${expense.amount.toFixed(2)}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
+
+      {/* Modal for Adding Expense */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl text-slate-900">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Add New Expense</h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-slate-900 text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-xs font-semibold">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleAddExpense} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Morning Coffee"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Amount ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Category
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] text-sm transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? 'Saving...' : 'Save Expense'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
