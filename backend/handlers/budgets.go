@@ -6,10 +6,6 @@ import (
 
 	"backend/models"
 	"backend/utils"
-<<<<<<< HEAD
-=======
-
->>>>>>> f4f53d0 (user is able to set a budget)
 	"gorm.io/gorm"
 )
 
