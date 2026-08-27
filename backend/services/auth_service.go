@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"expense-tracker2/backend/models"
-	"expense-tracker2/backend/repository"
-	"expense-tracker2/backend/utils"
+	"backend/models"
+	"backend/repository"
+	"backend/utils"
 )
 
 // ErrEmailTaken is returned when signing up with an email already in use.
@@ -83,7 +83,7 @@ func (s *authService) Signup(input SignupInput) (*AuthResult, error) {
 	}
 
 	user := &models.User{
-		Name:     strings.TrimSpace(input.Name),
+		FullName: strings.TrimSpace(input.Name),
 		Email:    email,
 		Password: hashed,
 	}
