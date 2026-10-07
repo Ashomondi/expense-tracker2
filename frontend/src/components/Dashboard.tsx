@@ -11,12 +11,14 @@ interface Expense {
   title: string;
   amount: number;
   category: string;
+  currency?: string;
   date: string;
 }
 
 interface DashboardProps {
   user: User;
   onLogout?: () => void;
+  selectedCurrency?: 'KES' | 'USD' | 'EUR' | 'GBP';
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; dot: string; text: string; bar: string }> = {
@@ -30,37 +32,220 @@ const CATEGORY_COLORS: Record<string, { bg: string; dot: string; text: string; b
 
 const DEFAULT_COLOR = { bg: 'bg-gray-100', dot: 'bg-gray-500', text: 'text-gray-800', bar: 'bg-gray-500' };
 
-export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
+const CURRENCY_OPTIONS = [
+  { code: 'KES', label: 'Kenyan Shilling', symbol: 'KSh' },
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'GBP', label: 'Pound Sterling', symbol: '£' },
+];
+
+const CURRENCY_RATES: Record<string, number> = {
+  KES: 1,
+  USD: 129.5,
+  EUR: 140.2,
+  GBP: 162.4,
+};
+
+const formatCurrency = (value: number, currency = 'KES') =>
+  new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value);
+
+const convertCurrencyAmount = (value: number, fromCurrency: string, toCurrency: string) => {
+  const from = CURRENCY_RATES[fromCurrency] || CURRENCY_RATES.KES;
+  const to = CURRENCY_RATES[toCurrency] || CURRENCY_RATES.KES;
+  if (from === to) return value;
+  return (value * from) / to;
+};
+
+const formatKenyaDateInput = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Nairobi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const values: Record<string, string> = {};
+  parts.forEach((part) => {
+    if (part.type !== 'literal') values[part.type] = part.value;
+  });
+
+  return `${values.year}-${values.month}-${values.day}`;
+};
+
+const formatKenyaDate = (value: string | Date) => {
+  const date = value instanceof Date ? value : new Date(value);
+
+  return new Intl.DateTimeFormat('en-KE', {
+    timeZone: 'Africa/Nairobi',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+};
+
+const parseQuickExpense = (input: string) => {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(.*)$/i);
+  const amount = match ? Number(match[1]) : null;
+  const remainder = (match ? match[2] : trimmed).trim();
+
+  if (amount === null || amount <= 0) return null;
+
+  const categoryNames = Object.keys(CATEGORY_COLORS);
+  let category = 'Food & Drink';
+  let title = remainder || 'Expense';
+
+  for (const cat of categoryNames) {
+    const keywords = {
+      'Food & Drink': ['food', 'drink', 'drinks', 'coffee', 'dinner', 'lunch', 'breakfast', 'restaurant', 'meal', 'snack', 'burger', 'pizza', 'grocery', 'groceries', 'eat'],
+      Transport: ['transport', 'uber', 'bus', 'train', 'taxi', 'fuel', 'gas', 'metro', 'car', 'ride', 'parking'],
+      Entertainment: ['movie', 'movies', 'concert', 'music', 'streaming', 'netflix', 'games', 'game', 'theater', 'cinema', 'fun'],
+      Utilities: ['utility', 'utilities', 'electricity', 'water', 'internet', 'wifi', 'phone', 'bill', 'power', 'rent'],
+      Health: ['health', 'pharmacy', 'doctor', 'medicine', 'gym', 'fitness', 'hospital', 'medical', 'wellness'],
+      Shopping: ['shopping', 'shop', 'clothes', 'gift', 'gifts', 'amazon', 'store', 'purchase', 'wear'],
+    }[cat] || [];
+
+    if (keywords.some((keyword) => remainder.toLowerCase().includes(keyword.toLowerCase()))) {
+      category = cat;
+      title = remainder || cat;
+      break;
+    }
+  }
+
+  return { amount, category, title };
+};
+
+export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = 'KES' }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newAmount, setNewAmount] = useState('');
+  const [newCategory, setNewCategory] = useState('Food & Drink');
+  const [newDate, setNewDate] = useState(() => formatKenyaDateInput());
+  const [newCurrency, setNewCurrency] = useState<'KES' | 'USD' | 'EUR' | 'GBP'>(selectedCurrency);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [quickEntry, setQuickEntry] = useState('');
 
   useEffect(() => {
-    const fetchExpenses = async () => {
-      try {
-        const res = await fetch('http://localhost:8080/api/expenses', {
-          credentials: 'include',
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setExpenses(data || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch expenses:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setNewCurrency(selectedCurrency);
+  }, [selectedCurrency]);
 
-    fetchExpenses();
-  }, []);
+  const displayCurrency = selectedCurrency;
+  const totalSpent = expenses.reduce((sum, item) => {
+    const sourceCurrency = item.currency || 'KES';
+    return sum + convertCurrencyAmount(item.amount, sourceCurrency, displayCurrency);
+  }, 0);
 
-  const totalSpent = expenses.reduce((sum, item) => sum + item.amount, 0);
   const totalBudget = 1900;
   const budgetUsedPct = Math.min(Math.round((totalSpent / totalBudget) * 100), 100);
   const budgetRemaining = Math.max(totalBudget - totalSpent, 0);
   const budgetHealthPct = 100 - budgetUsedPct;
 
-  // Mock category budgets matching design
+  const formattedMonth = new Intl.DateTimeFormat('en-KE', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Africa/Nairobi',
+  }).format(new Date());
+
+  const fetchExpenses = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/expenses', {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setExpenses(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch expenses:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
+  const handleQuickEntrySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = quickEntry.trim();
+
+    if (!trimmed) {
+      setError('Please type an expense description or an amount, for example "50 drinks".');
+      setIsAddModalOpen(true);
+      return;
+    }
+
+    const parsed = parseQuickExpense(trimmed);
+    if (parsed) {
+      setNewTitle(parsed.title);
+      setNewAmount(parsed.amount !== null ? parsed.amount.toString() : '');
+      setNewCategory(parsed.category);
+      setNewDate(formatKenyaDateInput());
+      setQuickEntry('');
+      setError('');
+      setIsAddModalOpen(true);
+      return;
+    }
+
+    setError('Please type an expense description or an amount, for example "50 drinks".');
+    setIsAddModalOpen(true);
+  };
+
+  const handleQuickAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+
+    const parsedAmount = parseFloat(newAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setError('Please enter a valid amount.');
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:8080/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: newTitle,
+          amount: parsedAmount,
+          category: newCategory,
+          date: newDate,
+          currency: newCurrency,
+        }),
+      });
+
+      if (res.ok) {
+        setNewTitle('');
+        setNewAmount('');
+        setNewCategory('Food & Drink');
+        setNewDate(formatKenyaDateInput());
+        setNewCurrency('KES');
+        setIsAddModalOpen(false);
+        fetchExpenses();
+      } else {
+        const errData = await res.json();
+        setError(errData.error || 'Failed to add expense');
+      }
+    } catch (err) {
+      setError('Server error. Check backend connection.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const budgetCategories = [
     { name: 'Food & Drink', spent: 110, total: 800, pct: 14 },
     { name: 'Transport', spent: 57, total: 200, pct: 29 },
@@ -68,18 +253,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     { name: 'Utilities', spent: 121, total: 300, pct: 40 },
     { name: 'Health', spent: 73, total: 200, pct: 36 },
     { name: 'Shopping', spent: 35, total: 250, pct: 14 },
-  ];
+  ].map((category) => ({
+    ...category,
+    spent: convertCurrencyAmount(category.spent, 'KES', displayCurrency),
+    total: convertCurrencyAmount(category.total, 'KES', displayCurrency),
+  }));
+
+  const currentDateLabel = formattedMonth.toUpperCase();
 
   return (
     <main className="p-8 max-w-7xl mx-auto text-slate-900 bg-[#F3F6F4] min-h-screen">
-      {/* Date & Greeting */}
-      <div className="mb-6">
-        <span className="text-xs uppercase font-semibold tracking-wider text-gray-400">
-          OCTOBER 2024
-        </span>
-        <h1 className="text-4xl font-serif font-bold text-slate-900 mt-1">
-          Good morning, {user.full_name.split(' ')[0]}
-        </h1>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <span className="text-xs uppercase font-semibold tracking-wider text-gray-400">
+            {currentDateLabel}
+          </span>
+          <h1 className="text-4xl font-serif font-bold text-slate-900 mt-1">
+            Good morning, {user.full_name.split(' ')[0]}
+          </h1>
+        </div>
+
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="px-5 py-2.5 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] transition-colors cursor-pointer"
+        >
+          + Add Expense
+        </button>
+      </div>
+
+      <div className="mb-6 bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+        <form onSubmit={handleQuickEntrySubmit} className="flex gap-3">
+          <input
+            type="text"
+            value={quickEntry}
+            onChange={(e) => setQuickEntry(e.target.value)}
+            placeholder="Quick entry: 50 drinks"
+            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] text-sm"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] transition-colors text-sm"
+          >
+            Add Quick Expense
+          </button>
+        </form>
       </div>
 
       {/* Top 4 Key Metric Cards */}
@@ -94,7 +311,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           </div>
           <div className="mt-4">
             <div className="text-3xl font-serif font-bold text-slate-900">
-              ${totalSpent.toFixed(2)}
+              {formatCurrency(totalSpent, newCurrency)}
             </div>
             <div className="text-xs text-emerald-500 font-semibold mt-1 flex items-center gap-1">
               ↗ +12% vs last month
@@ -115,7 +332,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               {budgetUsedPct}%
             </div>
             <div className="text-xs text-emerald-500 font-semibold mt-1 flex items-center gap-1">
-              ↗ ${budgetRemaining.toFixed(2)} remaining
+              ↗ {formatCurrency(budgetRemaining, newCurrency)} remaining
             </div>
           </div>
         </div>
@@ -238,8 +455,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     />
                   </div>
                   <div className="flex justify-between text-[11px] text-gray-400">
-                    <span>${cat.spent}</span>
-                    <span>${cat.total}</span>
+                    <span>{formatCurrency(cat.spent, newCurrency)}</span>
+                    <span>{formatCurrency(cat.total, newCurrency)}</span>
                   </div>
                 </div>
               );
@@ -278,16 +495,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                           {item.category}
                         </span>
                         <span className="text-xs text-gray-400">
-                          {new Date(item.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
+                          {formatKenyaDate(item.date)}
                         </span>
                       </div>
                     </div>
                   </div>
                   <div className="font-bold text-slate-900 text-sm">
-                    -${item.amount.toFixed(2)}
+                    -{formatCurrency(item.amount, newCurrency)}
                   </div>
                 </div>
               );
@@ -295,6 +509,123 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           </div>
         )}
       </div>
+
+      {/* Quick Add Expense Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl text-slate-900">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Add New Expense</h3>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-gray-400 hover:text-slate-900 text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-xs font-semibold">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleQuickAddExpense} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="e.g. Morning Coffee"
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Amount ({CURRENCY_OPTIONS.find((c) => c.code === newCurrency)?.symbol})
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={newAmount}
+                  onChange={(e) => setNewAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Category
+                </label>
+                <select
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                >
+                  {Object.keys(CATEGORY_COLORS).map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">
+                  Currency
+                </label>
+                <select
+                  value={newCurrency}
+                  onChange={(e) => setNewCurrency(e.target.value as 'KES' | 'USD' | 'EUR' | 'GBP')}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                >
+                  {CURRENCY_OPTIONS.map((curr) => (
+                    <option key={curr.code} value={curr.code}>
+                      {curr.label} ({curr.symbol})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] text-sm transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? 'Saving...' : 'Save Expense'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
