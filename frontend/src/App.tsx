@@ -20,11 +20,14 @@ export const App: React.FC = () => {
   // 1. Updated activeTab state to include 'budgets'
   const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'budgets'>('dashboard');
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [selectedCurrency, setSelectedCurrency] = useState<'KES' | 'USD' | 'EUR' | 'GBP'>('KES');
 
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/me`);
+        const res = await fetch(`${API_BASE}/api/me`, {
+          credentials: 'include',
+        });
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
@@ -41,7 +44,10 @@ export const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_BASE}/api/logout`, { method: 'POST' });
+      await fetch(`${API_BASE}/api/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
     } catch (err) {
       console.error('Logout failed:', err);
     } finally {
@@ -110,9 +116,24 @@ export const App: React.FC = () => {
 
         {/* 3. Dynamic Main View with Budgets Page */}
         <div className="flex-1 overflow-y-auto">
-          {activeTab === 'dashboard' && <Dashboard user={user} onLogout={handleLogout} />}
-          {activeTab === 'expenses' && <ExpensesPage onAddExpenseClick={() => setActiveTab('dashboard')} />}
-          {activeTab === 'budgets' && <BudgetsPage />}
+          <div className="border-b border-white/10 bg-[#0E1310] p-4 flex items-center justify-end">
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Currency</label>
+              <select
+                value={selectedCurrency}
+                onChange={(e) => setSelectedCurrency(e.target.value as 'KES' | 'USD' | 'EUR' | 'GBP')}
+                className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+              >
+                <option value="KES">KES</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
+          </div>
+          {activeTab === 'dashboard' && <Dashboard user={user} onLogout={handleLogout} selectedCurrency={selectedCurrency} />}
+          {activeTab === 'expenses' && <ExpensesPage selectedCurrency={selectedCurrency} onCurrencyChange={setSelectedCurrency} />}
+          {activeTab === 'budgets' && <BudgetsPage selectedCurrency={selectedCurrency} />}
         </div>
       </div>
     );
