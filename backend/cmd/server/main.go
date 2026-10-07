@@ -9,8 +9,8 @@ import (
 	"backend/handlers"
 	"backend/models"
 
-	"gorm.io/driver/sqlite"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -55,20 +55,21 @@ func main() {
 		log.Println("Connecting to SQLite database...")
 		db, err = gorm.Open(sqlite.Open("spendly.db"), &gorm.Config{})
 	}
-	
+
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
 	// 3. Auto-migrate DB Schema
 	log.Println("Running database migrations...")
-	if err := db.AutoMigrate(&models.User{}, &models.Expense{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Expense{}, &models.Budget{}); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
 	// 4. Instantiate Handlers
 	authHandler := handlers.NewAuthHandler(db, jwtKey)
 	expenseHandler := handlers.NewExpenseHandler(db, jwtKey)
+	budgetHandler := handlers.NewBudgetHandler(db, jwtKey)
 
 	// 5. Setup Router
 	mux := http.NewServeMux()
@@ -86,6 +87,20 @@ func main() {
 			expenseHandler.GetExpenses(w, r)
 		case http.MethodPost:
 			expenseHandler.CreateExpense(w, r)
+		case http.MethodDelete:
+			expenseHandler.DeleteExpense(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Budget Endpoints
+	mux.HandleFunc("/api/budgets", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			budgetHandler.GetBudgets(w, r)
+		case http.MethodPost, http.MethodPut:
+			budgetHandler.SetBudget(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
