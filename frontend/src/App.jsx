@@ -6,21 +6,13 @@ import { ExpensesPage } from './pages/ExpensesPage';
 import { BudgetsPage } from './pages/BudgetsPage';
 import { API_BASE } from './api';
 
-interface User {
-  id: number;
-  full_name: string;
-  email: string;
-}
-
-export const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<'landing' | 'auth'>('landing');
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  
-  // 1. Updated activeTab state to include 'budgets'
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'budgets'>('dashboard');
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState('landing');
+  const [authMode, setAuthMode] = useState('login');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [selectedCurrency, setSelectedCurrency] = useState<'KES' | 'USD' | 'EUR' | 'GBP'>('KES');
+  const [selectedCurrency, setSelectedCurrency] = useState('KES');
 
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -28,6 +20,7 @@ export const App: React.FC = () => {
         const res = await fetch(`${API_BASE}/api/me`, {
           credentials: 'include',
         });
+
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
@@ -65,11 +58,9 @@ export const App: React.FC = () => {
     );
   }
 
-  // 1. Authenticated Main Layout
   if (user) {
     return (
       <div className="flex min-h-screen bg-[#0E1310] text-white">
-        {/* Sidebar */}
         <aside className="w-64 border-r border-white/10 p-6 flex flex-col justify-between shrink-0">
           <div>
             <h1 className="text-2xl font-bold text-[#10B981] mb-8">Spendly</h1>
@@ -90,8 +81,6 @@ export const App: React.FC = () => {
               >
                 Expenses
               </button>
-
-              {/* 2. Added Budgets Nav Link */}
               <button
                 onClick={() => setActiveTab('budgets')}
                 className={`w-full text-left px-4 py-3 font-semibold rounded-lg transition-colors ${
@@ -114,14 +103,13 @@ export const App: React.FC = () => {
           </div>
         </aside>
 
-        {/* 3. Dynamic Main View with Budgets Page */}
         <div className="flex-1 overflow-y-auto">
           <div className="border-b border-white/10 bg-[#0E1310] p-4 flex items-center justify-end">
             <div className="flex items-center gap-2">
               <label className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Currency</label>
               <select
                 value={selectedCurrency}
-                onChange={(e) => setSelectedCurrency(e.target.value as 'KES' | 'USD' | 'EUR' | 'GBP')}
+                onChange={(e) => setSelectedCurrency(e.target.value)}
                 className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
               >
                 <option value="KES">KES</option>
@@ -131,15 +119,19 @@ export const App: React.FC = () => {
               </select>
             </div>
           </div>
-          {activeTab === 'dashboard' && <Dashboard user={user} onLogout={handleLogout} selectedCurrency={selectedCurrency} />}
-          {activeTab === 'expenses' && <ExpensesPage selectedCurrency={selectedCurrency} onCurrencyChange={setSelectedCurrency} />}
+
+          {activeTab === 'dashboard' && (
+            <Dashboard user={user} onLogout={handleLogout} selectedCurrency={selectedCurrency} />
+          )}
+          {activeTab === 'expenses' && (
+            <ExpensesPage selectedCurrency={selectedCurrency} onCurrencyChange={setSelectedCurrency} />
+          )}
           {activeTab === 'budgets' && <BudgetsPage selectedCurrency={selectedCurrency} />}
         </div>
       </div>
     );
   }
 
-  // 2. Landing Page
   if (currentPage === 'landing') {
     return (
       <LandingPage
@@ -151,7 +143,6 @@ export const App: React.FC = () => {
     );
   }
 
-  // 3. Auth Page
   return (
     <AuthPage
       mode={authMode}
@@ -165,6 +156,4 @@ export const App: React.FC = () => {
       onSuccess={(loggedInUser) => setUser(loggedInUser)}
     />
   );
-};
-
-export default App;
+}

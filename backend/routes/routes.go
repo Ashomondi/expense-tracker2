@@ -1,47 +1,60 @@
 package main
 
 import (
-	"log"
+	"net/http"
 
-	"expense-tracker2/backend/config"
-	"expense-tracker2/backend/database"
-	"expense-tracker2/backend/handlers"
-	"expense-tracker2/backend/repository"
-	"expense-tracker2/backend/routes"
-	"expense-tracker2/backend/services"
+	"backend/handlers"
+	"backend/middleware"
 
-	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func main() {
-	cfg := config.Load()
+// RegisterRoutes sets up all API endpoints and applies global middleware
+func RegisterRoutes(db *gorm.DB, jwtKey []byte) http.Handler {
+	mux := http.NewServeMux()
 
-	db, err := database.Connect(cfg)
-	if err != nil {
-		log.Fatalf("database initialization failed: %v", err)
-	}
+	// Instantiate Handlers
+	authHandler := handlers.NewAuthHandler(db, jwtKey)
+	expenseHandler := handlers.NewExpenseHandler(db, jwtKey)
+	budgetHandler := handlers.NewBudgetHandler(db, jwtKey)
 
-	// Wire the auth vertical: repository -> service -> handler.
-	authRepo := repository.NewAuthRepository(db)
-	authService := services.NewAuthService(authRepo, cfg.JWTSecret, cfg.JWTExpiration)
-	authHandler := handlers.NewAuthHandler(authService)
-
-	// Wire the expense vertical: repository -> service -> handler.
-	expenseRepo := repository.NewExpenseRepository(db)
-	expenseService := services.NewExpenseService(expenseRepo)
-	expenseHandler := handlers.NewExpenseHandler(expenseService)
-
-	router := gin.New()
-	router.Use(gin.Recovery())
-
-	routes.Setup(router, routes.Dependencies{
-		AuthHandler:    authHandler,
-		ExpenseHandler: expenseHandler,
-		JWTSecret:      cfg.JWTSecret,
+	// Health Check Endpoint
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok","app":"Spendly API"}`))
 	})
 
-	log.Printf("server starting on :%s", cfg.Port)
-	if err := router.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("server failed to start: %v", err)
-	}
+	// Auth Endpoints
+	mux.HandleFunc("/api/signup", authHandler.SignUp)
+	mux.HandleFunc("/api/login", authHandler.Login)
+	mux.HandleFunc("/api/me", authHandler.GetMe)
+	mux.HandleFunc("/api/logout", authHandler.Logout)
+
+	// Expense Endpoints
+	mux.HandleFunc("/api/expenses", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			expenseHandler.GetExpenses(w, r)
+		case http.MethodPost:
+			expenseHandler.CreateExpense(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Budget Endpoints
+	mux.HandleFunc("/api/budgets", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			budgetHandler.GetBudgets(w, r)
+		case http.MethodPost, http.MethodPut:
+			budgetHandler.SetBudget(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Return standard mux wrapped with CORS middleware
+	return middleware.EnableCORS(mux)
 }

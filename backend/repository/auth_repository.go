@@ -3,9 +3,8 @@ package repository
 import (
 	"errors"
 
-	"expense-tracker2/backend/models"
+	"backend/models"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +16,7 @@ var ErrUserNotFound = errors.New("user not found")
 // service layer testable via mocks.
 type AuthRepository interface {
 	FindByEmail(email string) (*models.User, error)
-	FindByID(id uuid.UUID) (*models.User, error)
+	FindByID(id uint) (*models.User, error)
 	Create(user *models.User) error
 	ExistsByEmail(email string) (bool, error)
 }
@@ -42,7 +41,7 @@ func (r *authRepository) FindByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *authRepository) FindByID(id uuid.UUID) (*models.User, error) {
+func (r *authRepository) FindByID(id uint) (*models.User, error) {
 	var user models.User
 	if err := r.db.Where("id = ?", id).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
