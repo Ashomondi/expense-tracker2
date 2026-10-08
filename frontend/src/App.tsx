@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { LandingPage } from './components/LandingPage';
-import { AuthPage } from './components/AuthPage';
-import { Dashboard } from './components/Dashboard';
-import { ExpensesPage } from './components/ExpensesPage';
-import { BudgetsPage } from './components/BudgetsPage';
+import { LandingPage } from './pages/LandingPage';
+import { AuthPage } from './pages/AuthPage';
+import { Dashboard } from './pages/Dashboard';
+import { ExpensesPage } from './pages/ExpensesPage';
+import { BudgetsPage } from './pages/BudgetsPage';
 import { API_BASE } from './api';
 
 interface User {
