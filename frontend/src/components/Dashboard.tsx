@@ -87,6 +87,15 @@ const formatKenyaDate = (value: string | Date) => {
   }).format(date);
 };
 
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  'Food & Drink': ['food', 'drink', 'drinks', 'coffee', 'tea', 'juice', 'milk', 'dinner', 'lunch', 'breakfast', 'restaurant', 'meal', 'snack', 'burger', 'pizza', 'grocery', 'groceries', 'eat', 'eating', 'cafe', 'café', 'market', 'fruits', 'vegetables', 'salad', 'ramen', 'boba', 'soup', 'cake', 'cookies', 'beer', 'wine', 'bar', 'chai', 'chapati', 'nyama choma', 'kebab', 'shawarma'],
+  Transport: ['transport', 'uber', 'bus', 'train', 'taxi', 'fuel', 'gas', 'metro', 'car', 'ride', 'parking', 'flight', 'ticket', 'tickets', 'airline', 'trip', 'travel', 'road', 'driver', 'motorbike', 'boda', 'matatu', 'fare', 'tuktuk'],
+  Entertainment: ['movie', 'movies', 'concert', 'music', 'streaming', 'netflix', 'spotify', 'game', 'games', 'theater', 'cinema', 'fun', 'festival', 'party', 'show', 'booking', 'tickets', 'live', 'karaoke', 'barbecue', 'stadium', 'play', 'drama'],
+  Utilities: ['utility', 'utilities', 'electricity', 'water', 'internet', 'wifi', 'phone', 'bill', 'power', 'rent', 'electric', 'light', 'service', 'provider', 'solar', 'dstv', 'tv', 'subscription', 'lantern', 'laundry', 'maid', 'cleaning'],
+  Health: ['health', 'pharmacy', 'doctor', 'medicine', 'gym', 'fitness', 'hospital', 'medical', 'wellness', 'vitamin', 'therapy', 'checkup', 'clinic', 'dentist', 'supplement', 'massage', 'insurance', 'optician'],
+  Shopping: ['shopping', 'shop', 'clothes', 'gift', 'gifts', 'amazon', 'store', 'purchase', 'wear', 'online', 'bag', 'sneakers', 'apparel', 'retail', 'order', 'fashion', 'shoes', 'electronics', 'phone', 'headphones', 'toys', 'stationery', 'gadget'],
+};
+
 const parseQuickExpense = (input: string) => {
   const trimmed = input.trim();
   if (!trimmed) return null;
@@ -95,27 +104,30 @@ const parseQuickExpense = (input: string) => {
   const amount = match ? Number(match[1]) : null;
   const remainder = (match ? match[2] : trimmed).trim();
 
-  if (amount === null || amount <= 0) return null;
+  if (!remainder && amount === null) return null;
 
-  const categoryNames = Object.keys(CATEGORY_COLORS);
+  const normalized = remainder.toLowerCase();
   let category = 'Food & Drink';
-  let title = remainder || 'Expense';
+  let bestScore = 0;
+  let title = remainder;
 
-  for (const cat of categoryNames) {
-    const keywords = {
-      'Food & Drink': ['food', 'drink', 'drinks', 'coffee', 'dinner', 'lunch', 'breakfast', 'restaurant', 'meal', 'snack', 'burger', 'pizza', 'grocery', 'groceries', 'eat'],
-      Transport: ['transport', 'uber', 'bus', 'train', 'taxi', 'fuel', 'gas', 'metro', 'car', 'ride', 'parking'],
-      Entertainment: ['movie', 'movies', 'concert', 'music', 'streaming', 'netflix', 'games', 'game', 'theater', 'cinema', 'fun'],
-      Utilities: ['utility', 'utilities', 'electricity', 'water', 'internet', 'wifi', 'phone', 'bill', 'power', 'rent'],
-      Health: ['health', 'pharmacy', 'doctor', 'medicine', 'gym', 'fitness', 'hospital', 'medical', 'wellness'],
-      Shopping: ['shopping', 'shop', 'clothes', 'gift', 'gifts', 'amazon', 'store', 'purchase', 'wear'],
-    }[cat] || [];
-
-    if (keywords.some((keyword) => remainder.toLowerCase().includes(keyword.toLowerCase()))) {
-      category = cat;
-      title = remainder || cat;
-      break;
+  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    let score = 0;
+    for (const keyword of keywords) {
+      if (normalized.includes(keyword.toLowerCase())) {
+        score += 1;
+      }
     }
+
+    if (score > bestScore) {
+      bestScore = score;
+      category = cat;
+      title = remainder;
+    }
+  }
+
+  if (amount === null || amount <= 0) {
+    return { amount: null, category, title };
   }
 
   return { amount, category, title };
@@ -139,41 +151,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
   }, [selectedCurrency]);
 
   const displayCurrency = selectedCurrency;
-  const totalSpent = expenses.reduce((sum, item) => {
-    const sourceCurrency = item.currency || 'KES';
-    return sum + convertCurrencyAmount(item.amount, sourceCurrency, displayCurrency);
-  }, 0);
-
-  const totalBudget = 1900;
-  const budgetUsedPct = Math.min(Math.round((totalSpent / totalBudget) * 100), 100);
-  const budgetRemaining = Math.max(totalBudget - totalSpent, 0);
-  const budgetHealthPct = 100 - budgetUsedPct;
-
-  const formattedMonth = new Intl.DateTimeFormat('en-KE', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Africa/Nairobi',
-  }).format(new Date());
-
-  const fetchExpenses = async () => {
-    try {
-      const res = await fetch('http://localhost:8080/api/expenses', {
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setExpenses(data || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch expenses:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchExpenses();
-  }, []);
 
   const handleQuickEntrySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,13 +158,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
 
     if (!trimmed) {
       setError('Please type an expense description or an amount, for example "50 drinks".');
+      setNewTitle('');
+      setNewAmount('');
+      setNewCategory('Food & Drink');
       setIsAddModalOpen(true);
       return;
     }
 
     const parsed = parseQuickExpense(trimmed);
     if (parsed) {
-      setNewTitle(parsed.title);
+      setNewTitle(parsed.title || '');
       setNewAmount(parsed.amount !== null ? parsed.amount.toString() : '');
       setNewCategory(parsed.category);
       setNewDate(formatKenyaDateInput());
@@ -198,6 +178,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     }
 
     setError('Please type an expense description or an amount, for example "50 drinks".');
+    setNewTitle('');
+    setNewAmount('');
+    setNewCategory('Food & Drink');
     setIsAddModalOpen(true);
   };
 
@@ -245,6 +228,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
       setSubmitting(false);
     }
   };
+
+  const totalSpent = expenses.reduce((sum, item) => {
+    const sourceCurrency = item.currency || 'KES';
+    return sum + convertCurrencyAmount(item.amount, sourceCurrency, displayCurrency);
+  }, 0);
+
+  const totalBudget = 1900;
+  const budgetUsedPct = Math.min(Math.round((totalSpent / totalBudget) * 100), 100);
+  const budgetRemaining = Math.max(totalBudget - totalSpent, 0);
+  const budgetHealthPct = 100 - budgetUsedPct;
+
+  const formattedMonth = new Intl.DateTimeFormat('en-KE', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Africa/Nairobi',
+  }).format(new Date());
+
+  const fetchExpenses = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/expenses', {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setExpenses(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch expenses:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
 
   const budgetCategories = [
     { name: 'Food & Drink', spent: 110, total: 800, pct: 14 },
