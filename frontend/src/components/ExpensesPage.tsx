@@ -87,12 +87,12 @@ interface ExpensesPageProps {
 const CATEGORIES = ['All', 'Food & Drink', 'Transport', 'Entertainment', 'Utilities', 'Health', 'Shopping'];
 
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  'Food & Drink': ['food', 'drink', 'drinks', 'coffee', 'cup', 'cups', 'dinner', 'lunch', 'breakfast', 'restaurant', 'meal', 'snack', 'burger', 'pizza', 'grocery', 'groceries', 'eat', 'milk', 'tea', 'juice', 'salad', 'ramen', 'boba', 'cafe', 'market'],
-  Transport: ['transport', 'uber', 'bus', 'train', 'taxi', 'fuel', 'gas', 'metro', 'car', 'ride', 'parking', 'flight', 'ticket', 'tickets', 'airline', 'trip', 'travel'],
-  Entertainment: ['movie', 'movies', 'concert', 'music', 'streaming', 'netflix', 'games', 'game', 'theater', 'cinema', 'fun', 'festival', 'party', 'show', 'booking'],
-  Utilities: ['utility', 'utilities', 'electricity', 'water', 'internet', 'wifi', 'phone', 'bill', 'power', 'rent', 'electric', 'light', 'service', 'provider'],
-  Health: ['health', 'pharmacy', 'doctor', 'medicine', 'gym', 'fitness', 'hospital', 'medical', 'wellness', 'vitamin', 'therapy', 'checkup', 'clinic'],
-  Shopping: ['shopping', 'shop', 'clothes', 'gift', 'gifts', 'amazon', 'store', 'purchase', 'wear', 'online', 'bag', 'sneakers', 'apparel', 'retail', 'order'],
+  'Food & Drink': ['food', 'drink', 'drinks', 'coffee', 'tea', 'juice', 'milk', 'dinner', 'lunch', 'breakfast', 'restaurant', 'meal', 'snack', 'burger', 'pizza', 'grocery', 'groceries', 'eat', 'eating', 'cafe', 'café', 'market', 'fruits', 'vegetables', 'salad', 'ramen', 'boba', 'soup', 'cake', 'cookies', 'beer', 'wine', 'bar', 'chai', 'chapati', 'nyama choma', 'kebab', 'shawarma'],
+  Transport: ['transport', 'uber', 'bus', 'train', 'taxi', 'fuel', 'gas', 'metro', 'car', 'ride', 'parking', 'flight', 'ticket', 'tickets', 'airline', 'trip', 'travel', 'road', 'driver', 'motorbike', 'boda', 'matatu', 'fare', 'tuktuk'],
+  Entertainment: ['movie', 'movies', 'concert', 'music', 'streaming', 'netflix', 'spotify', 'game', 'games', 'theater', 'cinema', 'fun', 'festival', 'party', 'show', 'booking', 'tickets', 'live', 'karaoke', 'stadium', 'play', 'drama'],
+  Utilities: ['utility', 'utilities', 'electricity', 'water', 'internet', 'wifi', 'phone', 'bill', 'power', 'rent', 'electric', 'light', 'service', 'provider', 'solar', 'dstv', 'tv', 'subscription', 'lantern', 'laundry', 'maid', 'cleaning'],
+  Health: ['health', 'pharmacy', 'doctor', 'medicine', 'gym', 'fitness', 'hospital', 'medical', 'wellness', 'vitamin', 'therapy', 'checkup', 'clinic', 'dentist', 'supplement', 'massage', 'insurance', 'optician'],
+  Shopping: ['shopping', 'shop', 'clothes', 'gift', 'gifts', 'amazon', 'store', 'purchase', 'wear', 'online', 'bag', 'sneakers', 'apparel', 'retail', 'order', 'fashion', 'shoes', 'electronics', 'phone', 'headphones', 'toys', 'stationery', 'gadget'],
 };
 
 const parseQuickExpense = (input: string) => {
@@ -103,7 +103,7 @@ const parseQuickExpense = (input: string) => {
   const amountValue = amountMatch ? Number(amountMatch[1]) : null;
   const text = (amountMatch ? amountMatch[2] : trimmed).trim();
 
-  if (!text) return null;
+  if (!text && amountValue === null) return null;
 
   const loweredText = text.toLowerCase();
   let category = 'Food & Drink';
@@ -127,14 +127,14 @@ const parseQuickExpense = (input: string) => {
     return { amount: amountValue, category, title: text };
   }
 
-  return { amount: null, category, title: text };
+  return { amount: amountValue, category, title: text };
 };
 
 export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = 'KES', onCurrencyChange }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [quickEntry, setQuickEntry] = useState('');
   const [currency, setCurrency] = useState<'KES' | 'USD' | 'EUR' | 'GBP'>(selectedCurrency);
 
@@ -223,7 +223,6 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
         setCategory('Food & Drink');
         setDate(formatKenyaDateInput());
         setIsModalOpen(false);
-        // Refetch expenses after adding a new one
         const fetchExpenses = async () => {
           setLoading(true);
           try {
@@ -257,6 +256,9 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
 
     if (!trimmed) {
       setError('Please type an expense description or an amount, for example "50 drinks".');
+      setTitle('');
+      setAmount('');
+      setCategory('Food & Drink');
       setIsModalOpen(true);
       return;
     }
@@ -264,7 +266,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
     const parsed = parseQuickExpense(trimmed);
     if (parsed) {
       setCategory(parsed.category);
-      setTitle(parsed.title);
+      setTitle(parsed.title || '');
       setAmount(parsed.amount !== null ? parsed.amount.toString() : '');
       setDate(formatKenyaDateInput());
       setQuickEntry('');
@@ -274,6 +276,9 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
     }
 
     setError('Please type an expense description or an amount, for example "50 drinks".');
+    setTitle('');
+    setAmount('');
+    setCategory('Food & Drink');
     setIsModalOpen(true);
   };
 
@@ -285,7 +290,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
       formatKenyaDate(expense.date).toLowerCase().includes(searchTerm.toLowerCase()) ||
       expenseCurrency.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory = activeCategory === 'All' || expense.category === activeCategory;
+    const matchesCategory = selectedCategory === 'All' || expense.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -365,9 +370,9 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                  activeCategory === cat
+                  selectedCategory === cat
                     ? 'bg-[#10B981] text-black'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
