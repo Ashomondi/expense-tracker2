@@ -1,3 +1,82 @@
-/* Budgets Page Styles - This page uses inline Tailwind classes, so minimal additional CSS needed */
+/* Budgets Page Styles */
 
-/* Custom styling can be added here as needed */
+.budgets-page-container {
+	padding: 2rem;
+	min-height: 100vh;
+	background-color: #F3F6F4;
+	color: #0f172a;
+	font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.budget-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+	.budget-grid {
+		grid-template-columns: 2fr 1fr;
+	}
+}
+
+.budget-card {
+	background: #fff;
+	border: 1px solid #e6eef2;
+	border-radius: 0.75rem;
+	padding: 1rem;
+	box-shadow: 0 1px 2px rgba(16,185,129,0.04);
+}
+
+.budget-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 0.75rem;
+}
+
+.budget-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.budget-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.75rem;
+	border-radius: 0.5rem;
+	background: #fafdfb;
+	border: 1px solid #f0f6f4;
+}
+
+.budget-item .title {
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.budget-item .meta {
+	font-size: 0.875rem;
+	color: #475569;
+}
+
+.budget-progress {
+	height: 8px;
+	background: #eef6f2;
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.budget-progress > .bar {
+	height: 100%;
+	background: #10b981;
+}
+
+.empty-state {
+	text-align: center;
+	color: #6b7280;
+	padding: 2rem 1rem;
+}
+
+/* keep file open for additional small project-specific overrides */
