@@ -99,9 +99,26 @@ const parseQuickExpense = (input: string) => {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  const amountMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(.*)$/i);
-  const amountValue = amountMatch ? Number(amountMatch[1]) : null;
-  const text = (amountMatch ? amountMatch[2] : trimmed).trim();
+  // Find a numeric amount anywhere in the string (supports thousands separators)
+  const amountRegex = /(\d{1,3}(?:[,\s]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/;
+  const amountMatch = trimmed.match(amountRegex);
+  let amountValue: number | null = null;
+  let text = trimmed;
+
+  if (amountMatch) {
+    const raw = amountMatch[0].replace(/[\s,]/g, '');
+    const n = Number(raw);
+    if (!Number.isNaN(n) && Number.isFinite(n)) {
+      amountValue = n;
+    }
+
+    // remove the matched amount from the text to keep the title clean
+    const start = amountMatch.index || 0;
+    text = (trimmed.slice(0, start) + trimmed.slice(start + amountMatch[0].length)).trim();
+  }
+
+  // Strip common currency symbols left in the text
+  text = text.replace(/^(?:\$|€|£|ksh|kes)\s*/i, '').trim();
 
   if (!text && amountValue === null) return null;
 
@@ -109,11 +126,24 @@ const parseQuickExpense = (input: string) => {
   let category = 'Food & Drink';
   let bestScore = 0;
 
+  const tokens = loweredText.split(/\W+/).filter(Boolean);
+
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
   for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     let score = 0;
     for (const keyword of keywords) {
-      if (loweredText.includes(keyword.toLowerCase())) {
-        score += 1;
+      const kw = keyword.toLowerCase();
+      const re = new RegExp(`\\b${escapeRegExp(kw)}\\b`);
+      if (re.test(loweredText)) {
+        score += 2; // exact word match
+      } else {
+        for (const tok of tokens) {
+          if (tok === kw || tok.startsWith(kw) || kw.startsWith(tok)) {
+            score += 1; // partial / prefix match
+            break;
+          }
+        }
       }
     }
 
@@ -121,10 +151,6 @@ const parseQuickExpense = (input: string) => {
       bestScore = score;
       category = cat;
     }
-  }
-
-  if (amountValue !== null && amountValue > 0) {
-    return { amount: amountValue, category, title: text };
   }
 
   return { amount: amountValue, category, title: text };
