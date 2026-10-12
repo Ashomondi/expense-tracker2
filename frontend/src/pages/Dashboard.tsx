@@ -323,7 +323,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Total Spent</span>
-            <div className="metric-icon">💵</div>
+            <div className="metric-icon"></div>
           </div>
           <div className="metric-content">
             <div className="metric-value">
@@ -339,7 +339,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Budget Used</span>
-            <div className="metric-icon">👛</div>
+            <div className="metric-icon"></div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{budgetUsedPct}%</div>
@@ -353,7 +353,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Transactions</span>
-            <div className="metric-icon">📈</div>
+            <div className="metric-icon"></div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{expenses.length}</div>
@@ -367,7 +367,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Budget Health</span>
-            <div className="metric-icon">🎯</div>
+            <div className="metric-icon"></div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{budgetHealthPct}%</div>
