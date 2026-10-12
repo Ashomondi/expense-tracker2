@@ -1,6 +1,6 @@
 module backend
 
-go 1.25.7
+go 1.25.0
 
 require (
 	github.com/gin-contrib/cors v1.7.7
@@ -10,6 +10,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	golang.org/x/crypto v0.54.0
+	gorm.io/driver/postgres v1.5.7
+	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
 
@@ -49,6 +51,4 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
-	gorm.io/driver/postgres v1.6.2 // indirect
-	gorm.io/driver/sqlite v1.6.0 // indirect
 )
