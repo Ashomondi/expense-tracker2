@@ -133,7 +133,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             {/* Card 1 */}
             <div className="bg-card-bg border border-card-border p-8 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-green-500/10 text-brand-green flex items-center justify-center text-xl mb-6">📈</div>
+              <div className="w-10 h-10 rounded-lg bg-green-500/10 text-brand-green flex items-center justify-center text-xl mb-6"></div>
               <h3 className="text-xl font-semibold mb-3">Real-Time Tracking</h3>
               <p className="text-text-muted text-sm leading-relaxed">
                 Log expenses instantly and watch your spending update live. Every purchase categorized automatically across 6 smart categories.
@@ -142,7 +142,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Card 2 */}
             <div className="bg-card-bg border border-card-border p-8 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl mb-6">🎯</div>
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl mb-6"></div>
               <h3 className="text-xl font-semibold mb-3">Smart Budgets</h3>
               <p className="text-text-muted text-sm leading-relaxed">
                 Set monthly limits per category. Get alerted before you overspend — not after. Budget management that actually changes behavior.
@@ -151,7 +151,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Card 3 */}
             <div className="bg-card-bg border border-card-border p-8 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl mb-6">📊</div>
+              <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl mb-6"></div>
               <h3 className="text-xl font-semibold mb-3">Deep Analytics</h3>
               <p className="text-text-muted text-sm leading-relaxed">
                 Understand your patterns with detailed charts, category breakdowns, and monthly trend analysis that reveals where money really goes.
@@ -160,7 +160,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Card 4 */}
             <div className="bg-card-bg border border-card-border p-8 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-6">🛡️</div>
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-6"></div>
               <h3 className="text-xl font-semibold mb-3">Secure & Private</h3>
               <p className="text-text-muted text-sm leading-relaxed">
                 Bank-level encryption, JWT authentication, and bcrypt password hashing. Your financial data is yours — period.
