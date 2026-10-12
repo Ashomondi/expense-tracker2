@@ -325,7 +325,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold text-gray-400">Total Spent</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center font-bold text-sm">
-              💵
             </div>
           </div>
           <div className="mt-4">
@@ -343,7 +342,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold text-gray-400">Budget Used</span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center font-bold text-sm">
-              👛
             </div>
           </div>
           <div className="mt-4">
@@ -361,7 +359,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold text-gray-400">Transactions</span>
             <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center font-bold text-sm">
-              📈
             </div>
           </div>
           <div className="mt-4">
@@ -379,7 +376,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold text-gray-400">Budget Health</span>
             <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center font-bold text-sm">
-              🎯
             </div>
           </div>
           <div className="mt-4">
