@@ -108,7 +108,7 @@ const parseQuickExpense = (input: string) => {
 
   const normalized = remainder.toLowerCase();
   let category = 'Food & Drink';
-  let bestScore = 0;
+  let bestScore = -1; // Changed from 0 to -1 so even a single match will override default
   let title = remainder;
 
   for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
@@ -217,13 +217,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         setNewDate(formatKenyaDateInput());
         setNewCurrency('KES');
         setIsAddModalOpen(false);
-        fetchExpenses();
+        await fetchExpenses();
       } else {
-        const errData = await res.json();
-        setError(errData.error || 'Failed to add expense');
+        try {
+          const errData = await res.json();
+          setError(errData.error || `Failed to add expense (${res.status})`);
+        } catch {
+          setError(`Failed to add expense (${res.status}: ${res.statusText})`);
+        }
       }
     } catch (err) {
-      setError('Server error. Check backend connection.');
+      console.error('Error adding expense:', err);
+      setError('Server error. Make sure the backend is running on http://localhost:8080');
     } finally {
       setSubmitting(false);
     }
@@ -325,7 +330,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold text-gray-400">Total Spent</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center font-bold text-sm">
-              💵
             </div>
           </div>
           <div className="mt-4">
@@ -343,7 +347,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold text-gray-400">Budget Used</span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center font-bold text-sm">
-              👛
             </div>
           </div>
           <div className="mt-4">
@@ -361,7 +364,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold text-gray-400">Transactions</span>
             <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center font-bold text-sm">
-              📈
             </div>
           </div>
           <div className="mt-4">
@@ -379,7 +381,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           <div className="flex justify-between items-start">
             <span className="text-xs font-semibold text-gray-400">Budget Health</span>
             <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center font-bold text-sm">
-              🎯
             </div>
           </div>
           <div className="mt-4">

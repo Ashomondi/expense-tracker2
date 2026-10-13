@@ -109,7 +109,7 @@ const parseQuickExpense = (input: string) => {
 
   const normalized = remainder.toLowerCase();
   let category = 'Food & Drink';
-  let bestScore = 0;
+  let bestScore = -1; // Changed from 0 to -1 so even a single match will override default
   let title = remainder;
 
   for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
@@ -218,13 +218,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         setNewDate(formatKenyaDateInput());
         setNewCurrency('KES');
         setIsAddModalOpen(false);
-        fetchExpenses();
+        await fetchExpenses();
       } else {
-        const errData = await res.json();
-        setError(errData.error || 'Failed to add expense');
+        try {
+          const errData = await res.json();
+          setError(errData.error || `Failed to add expense (${res.status})`);
+        } catch {
+          setError(`Failed to add expense (${res.status}: ${res.statusText})`);
+        }
       }
     } catch (err) {
-      setError('Server error. Check backend connection.');
+      console.error('Error adding expense:', err);
+      setError('Server error. Make sure the backend is running on http://localhost:8080');
     } finally {
       setSubmitting(false);
     }
@@ -323,7 +328,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Total Spent</span>
-            <div className="metric-icon">💵</div>
+            <div className="metric-icon"></div>
           </div>
           <div className="metric-content">
             <div className="metric-value">
@@ -339,7 +344,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Budget Used</span>
-            <div className="metric-icon">👛</div>
+            <div className="metric-icon"></div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{budgetUsedPct}%</div>
@@ -353,7 +358,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Transactions</span>
-            <div className="metric-icon">📈</div>
+            <div className="metric-icon"></div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{expenses.length}</div>
@@ -367,7 +372,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Budget Health</span>
-            <div className="metric-icon">🎯</div>
+            <div className="metric-icon"></div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{budgetHealthPct}%</div>

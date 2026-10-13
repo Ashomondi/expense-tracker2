@@ -1,3 +1,91 @@
-/* Expenses Page Styles - This page uses inline Tailwind classes, so minimal additional CSS needed */
+/* Expenses Page Styles */
 
-/* Custom styling can be added here as needed */
+.expenses-page-container {
+	padding: 2rem;
+	min-height: 100vh;
+	background-color: #F3F6F4;
+	color: #0f172a;
+	font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.quick-entry {
+	display: flex;
+	gap: 0.75rem;
+}
+
+.quick-entry input[type="text"] {
+	flex: 1;
+	padding: 0.6rem 0.75rem;
+	border-radius: 0.5rem;
+	border: 1px solid #e6eef2;
+	background: #fff;
+}
+
+.quick-entry button {
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.5rem;
+	background: #10b981;
+	color: #fff;
+	border: none;
+	cursor: pointer;
+}
+
+.transactions-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.transactions-table th,
+.transactions-table td {
+	padding: 0.75rem;
+	text-align: left;
+	border-bottom: 1px solid #f1f5f9;
+}
+
+.transactions-table tbody tr:hover {
+	background: #fff;
+}
+
+.filter-buttons {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.category-badge {
+	display: inline-block;
+	padding: 0.25rem 0.5rem;
+	border-radius: 9999px;
+	background: #ecfdf5;
+	color: #065f46;
+	font-weight: 600;
+	font-size: 0.75rem;
+}
+
+.empty-state {
+	text-align: center;
+	color: #6b7280;
+	padding: 2rem 1rem;
+}
+
+.modal-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0,0,0,0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.modal-card {
+	background: #fff;
+	border-radius: 0.75rem;
+	padding: 1rem;
+	max-width: 28rem;
+	width: 100%;
+}
+
+/* small helpers */
+.text-muted { color: #6b7280; }
+.muted-small { font-size: 0.875rem; color: #9ca3af; }
+

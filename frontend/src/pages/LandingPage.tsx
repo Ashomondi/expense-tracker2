@@ -134,7 +134,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           <div className="features-grid">
             {/* Card 1 */}
             <div className="feature-card">
-              <div className="feature-icon">📈</div>
+              <div className="feature-icon"></div>
               <h3 className="feature-name">Real-Time Tracking</h3>
               <p className="feature-description">
                 Log expenses instantly and watch your spending update live. Every purchase categorized automatically across 6 smart categories.
@@ -143,7 +143,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Card 2 */}
             <div className="feature-card">
-              <div className="feature-icon">🎯</div>
+              <div className="feature-icon"></div>
               <h3 className="feature-name">Smart Budgets</h3>
               <p className="feature-description">
                 Set monthly limits per category. Get alerted before you overspend — not after. Budget management that actually changes behavior.
@@ -152,7 +152,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Card 3 */}
             <div className="feature-card">
-              <div className="feature-icon">📊</div>
+              <div className="feature-icon"></div>
               <h3 className="feature-name">Deep Analytics</h3>
               <p className="feature-description">
                 Understand your patterns with detailed charts, category breakdowns, and monthly trend analysis that reveals where money really goes.
@@ -161,7 +161,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             {/* Card 4 */}
             <div className="feature-card">
-              <div className="feature-icon">🛡️</div>
+              <div className="feature-icon"></div>
               <h3 className="feature-name">Secure & Private</h3>
               <p className="feature-description">
                 Bank-level encryption, JWT authentication, and bcrypt password hashing. Your financial data is yours — period.
