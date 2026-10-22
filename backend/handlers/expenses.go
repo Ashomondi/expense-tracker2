@@ -53,6 +53,25 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate required fields
+	if strings.TrimSpace(input.Title) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Title is required"})
+		return
+	}
+
+	if input.Amount <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Amount must be greater than zero"})
+		return
+	}
+
+	if strings.TrimSpace(input.Category) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Category is required"})
+		return
+	}
+
 	parsedDate, err := time.Parse("2006-01-02", input.Date)
 	if err != nil {
 		parsedDate = time.Now()
@@ -65,9 +84,9 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 
 	expense := models.Expense{
 		UserID:   user.ID,
-		Title:    input.Title,
+		Title:    strings.TrimSpace(input.Title),
 		Amount:   input.Amount,
-		Category: input.Category,
+		Category: strings.TrimSpace(input.Category),
 		Currency: currency,
 		Date:     parsedDate,
 	}

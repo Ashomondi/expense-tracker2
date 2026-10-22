@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 import '../styles/pages/Dashboard.css';
 
 interface User {
@@ -89,29 +90,58 @@ const formatKenyaDate = (value: string | Date) => {
 };
 
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  'Food & Drink': ['food', 'drink', 'drinks', 'coffee', 'tea', 'juice', 'milk', 'dinner', 'lunch', 'breakfast', 'restaurant', 'meal', 'snack', 'burger', 'pizza', 'grocery', 'groceries', 'eat', 'eating', 'cafe', 'café', 'market', 'fruits', 'vegetables', 'salad', 'ramen', 'boba', 'soup', 'cake', 'cookies', 'beer', 'wine', 'bar', 'chai', 'chapati', 'nyama choma', 'kebab', 'shawarma'],
-  Transport: ['transport', 'uber', 'bus', 'train', 'taxi', 'fuel', 'gas', 'metro', 'car', 'ride', 'parking', 'flight', 'ticket', 'tickets', 'airline', 'trip', 'travel', 'road', 'driver', 'motorbike', 'boda', 'matatu', 'fare', 'tuktuk'],
-  Entertainment: ['movie', 'movies', 'concert', 'music', 'streaming', 'netflix', 'spotify', 'game', 'games', 'theater', 'cinema', 'fun', 'festival', 'party', 'show', 'booking', 'tickets', 'live', 'karaoke', 'barbecue', 'stadium', 'play', 'drama'],
-  Utilities: ['utility', 'utilities', 'electricity', 'water', 'internet', 'wifi', 'phone', 'bill', 'power', 'rent', 'electric', 'light', 'service', 'provider', 'solar', 'dstv', 'tv', 'subscription', 'lantern', 'laundry', 'maid', 'cleaning'],
-  Health: ['health', 'pharmacy', 'doctor', 'medicine', 'gym', 'fitness', 'hospital', 'medical', 'wellness', 'vitamin', 'therapy', 'checkup', 'clinic', 'dentist', 'supplement', 'massage', 'insurance', 'optician'],
-  Shopping: ['shopping', 'shop', 'clothes', 'gift', 'gifts', 'amazon', 'store', 'purchase', 'wear', 'online', 'bag', 'sneakers', 'apparel', 'retail', 'order', 'fashion', 'shoes', 'electronics', 'phone', 'headphones', 'toys', 'stationery', 'gadget'],
+  'Food & Drink': ['food', 'drink', 'drinks', 'coffee', 'tea', 'juice', 'milk', 'dinner', 'lunch', 'breakfast', 'restaurant', 'meal', 'snack', 'burger', 'pizza', 'grocery', 'groceries', 'eat', 'eating', 'cafe', 'café', 'market', 'fruits', 'vegetables', 'salad', 'ramen', 'boba', 'soup', 'cake', 'cookies', 'beer', 'wine', 'bar', 'chai', 'chapati', 'nyama choma', 'kebab', 'shawarma', 'water', 'soda', 'alcohol', 'takeout', 'delivery', 'lunchbox'],
+  Transport: ['transport', 'uber', 'bus', 'train', 'taxi', 'fuel', 'gas', 'metro', 'car', 'ride', 'parking', 'flight', 'ticket', 'tickets', 'airline', 'trip', 'travel', 'road', 'driver', 'motorbike', 'boda', 'matatu', 'fare', 'tuktuk', 'lyft', 'bolt', 'gasoline', 'diesel', 'mileage', 'toll'],
+  Entertainment: ['movie', 'movies', 'concert', 'music', 'streaming', 'netflix', 'spotify', 'game', 'games', 'theater', 'cinema', 'fun', 'festival', 'party', 'show', 'booking', 'tickets', 'live', 'karaoke', 'barbecue', 'stadium', 'play', 'drama', 'youtube', 'disney', 'hulu', 'xbox', 'playstation', 'steam', 'twitch', 'comedy', 'club'],
+  Utilities: ['utility', 'utilities', 'electricity', 'water', 'internet', 'wifi', 'phone', 'bill', 'power', 'rent', 'electric', 'light', 'service', 'provider', 'solar', 'dstv', 'tv', 'subscription', 'lantern', 'laundry', 'maid', 'cleaning', 'garbage', 'trash', 'sewage', 'heating', 'cooling', 'ac', 'air conditioning'],
+  Health: ['health', 'pharmacy', 'doctor', 'medicine', 'gym', 'fitness', 'hospital', 'medical', 'wellness', 'vitamin', 'therapy', 'checkup', 'clinic', 'dentist', 'supplement', 'massage', 'insurance', 'optician', 'dental', 'vision', 'prescription', 'pharmacy', 'physio', 'chiropractor'],
+  Shopping: ['shopping', 'shop', 'clothes', 'gift', 'gifts', 'amazon', 'store', 'purchase', 'wear', 'online', 'bag', 'sneakers', 'apparel', 'retail', 'order', 'fashion', 'shoes', 'electronics', 'phone', 'headphones', 'toys', 'stationery', 'gadget', 'book', 'books', 'novel', 'novels', 'bookstore', 'kindle', 'target', 'walmart', 'costco', 'ebay', 'etsy', 'mall', 'boutique', 'makeup', 'cosmetics', 'skincare', 'furniture', 'appliance', 'home decor', 'kitchenware'],
 };
 
 const parseQuickExpense = (input: string) => {
   const trimmed = input.trim();
-  if (!trimmed) return null;
+  console.log('[parseQuickExpense] Input:', JSON.stringify(input), 'Trimmed:', JSON.stringify(trimmed));
+  if (!trimmed) {
+    console.log('[parseQuickExpense] Empty input, returning null');
+    return null;
+  }
 
-  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(.*)$/i);
-  const amount = match ? Number(match[1]) : null;
-  const remainder = (match ? match[2] : trimmed).trim();
+  // Try to match patterns: "50 coffee", "coffee 50", "50", "coffee"
+  const amountFirst = trimmed.match(/^(\d+(?:\.\d+)?)\s*(.*)$/i);
+  const amountLast = trimmed.match(/^(.+?)\s+(\d+(?:\.\d+)?)$/i);
+  
+  console.log('[parseQuickExpense] amountFirst:', amountFirst, 'amountLast:', amountLast);
+  
+  let amount: number | null = null;
+  let remainder = '';
+  
+  if (amountFirst) {
+    // Format: "50 coffee" - amount first
+    amount = Number(amountFirst[1]);
+    remainder = amountFirst[2].trim();
+    console.log('[parseQuickExpense] Matched amountFirst, amount:', amount, 'remainder:', remainder);
+  } else if (amountLast) {
+    // Format: "coffee 50" - amount last
+    amount = Number(amountLast[2]);
+    remainder = amountLast[1].trim();
+    console.log('[parseQuickExpense] Matched amountLast, amount:', amount, 'remainder:', remainder);
+  } else {
+    // No amount found
+    remainder = trimmed;
+    console.log('[parseQuickExpense] No amount pattern matched, remainder:', remainder);
+  }
 
-  if (!remainder && amount === null) return null;
+  if (!remainder && amount === null) {
+    console.log('[parseQuickExpense] No remainder and no amount, returning null');
+    return null;
+  }
 
   const normalized = remainder.toLowerCase();
   let category = 'Food & Drink';
-  let bestScore = -1; // Changed from 0 to -1 so even a single match will override default
+  let bestScore = -1;
   let title = remainder;
 
+  // Score against all categories
   for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     let score = 0;
     for (const keyword of keywords) {
@@ -125,6 +155,16 @@ const parseQuickExpense = (input: string) => {
       category = cat;
       title = remainder;
     }
+  }
+
+  // If no category matched and we have a remainder, use it as title
+  if (bestScore === 0 && remainder) {
+    title = remainder;
+  }
+
+  // If only amount provided (e.g., "50"), use default category and generate title
+  if (amount !== null && amount > 0 && !remainder) {
+    return { amount, category: 'Food & Drink', title: 'Quick Expense' };
   }
 
   if (amount === null || amount <= 0) {
@@ -156,9 +196,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
   const handleQuickEntrySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = quickEntry.trim();
+    console.log('[handleQuickEntrySubmit] quickEntry:', JSON.stringify(quickEntry), 'trimmed:', JSON.stringify(trimmed));
 
     if (!trimmed) {
-      setError('Please type an expense description or an amount, for example "50 drinks".');
+      console.log('[handleQuickEntrySubmit] Empty trimmed, showing error');
+      setError('Please type an expense, e.g. "50 coffee", "uber 200", or just "100".');
       setNewTitle('');
       setNewAmount('');
       setNewCategory('Food & Drink');
@@ -167,6 +209,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     }
 
     const parsed = parseQuickExpense(trimmed);
+    console.log('[handleQuickEntrySubmit] parsed result:', parsed);
     if (parsed) {
       setNewTitle(parsed.title || '');
       setNewAmount(parsed.amount !== null ? parsed.amount.toString() : '');
@@ -178,7 +221,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
       return;
     }
 
-    setError('Please type an expense description or an amount, for example "50 drinks".');
+    console.log('[handleQuickEntrySubmit] parsed is falsy, showing error');
+    setError('Please type an expense, e.g. "50 coffee", "uber 200", or just "100".');
     setNewTitle('');
     setNewAmount('');
     setNewCategory('Food & Drink');
@@ -198,7 +242,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     }
 
     try {
-      const res = await fetch('http://localhost:8080/api/expenses', {
+      const res = await fetch(`${API_BASE}/api/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -216,7 +260,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         setNewAmount('');
         setNewCategory('Food & Drink');
         setNewDate(formatKenyaDateInput());
-        setNewCurrency('KES');
+        setNewCurrency(selectedCurrency);
         setIsAddModalOpen(false);
         await fetchExpenses();
       } else {
@@ -253,7 +297,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
 
   const fetchExpenses = async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/expenses', {
+      const res = await fetch(`${API_BASE}/api/expenses`, {
         credentials: 'include',
       });
       if (res.ok) {
