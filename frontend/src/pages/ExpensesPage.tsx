@@ -308,11 +308,11 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
   }));
 
   return (
-    <div className="p-8 max-w-7xl mx-auto text-slate-900 bg-[#F3F6F4] min-h-screen">
+    <div className="p-8 max-w-7xl mx-auto text-white bg-[#0E1310] min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <div>
           <span className="text-xs uppercase font-semibold tracking-wider text-gray-400">TRANSACTIONS</span>
-          <h1 className="text-4xl font-serif font-bold text-slate-900 mt-1">Expenses</h1>
+          <h1 className="text-4xl font-serif font-bold text-white mt-1">Expenses</h1>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -323,14 +323,14 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
       </div>
 
       <div className="mb-6 grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-4">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <div className="bg-[#1A1F1C] rounded-xl border border-[#2D3A33] shadow-sm p-4">
           <form onSubmit={handleQuickEntrySubmit} className="flex gap-3">
             <input
               type="text"
               value={quickEntry}
               onChange={(e) => setQuickEntry(e.target.value)}
               placeholder="Quick entry: 50 drinks"
-              className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] text-sm"
+              className="flex-1 p-3 border border-[#3D4A43] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] text-sm bg-[#121715] text-white"
             />
             <button
               type="submit"
@@ -341,12 +341,12 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
           </form>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center">
+        <div className="bg-[#1A1F1C] rounded-xl border border-[#2D3A33] shadow-sm p-4 flex items-center">
           <label className="text-xs uppercase tracking-wider text-gray-400 mr-2">Currency</label>
           <select
             value={currency}
             onChange={(e) => handleCurrencyChange(e.target.value as 'KES' | 'USD' | 'EUR' | 'GBP')}
-            className="p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+            className="p-2 border border-[#3D4A43] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#10B981] bg-[#121715] text-white"
           >
             {CURRENCY_OPTIONS.map((option) => (
               <option key={option.code} value={option.code}>{option.code}</option>
@@ -354,17 +354,17 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
           </select>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <div className="bg-[#1A1F1C] rounded-xl border border-[#2D3A33] shadow-sm p-4">
           <div className="text-xs uppercase tracking-wider text-gray-400">Total</div>
-          <div className="text-3xl font-serif font-bold text-slate-900 mt-2">{formatCurrency(totalSpent, currency)}</div>
+          <div className="text-3xl font-serif font-bold text-white mt-2">{formatCurrency(totalSpent, currency)}</div>
         </div>
       </div>
 
       <div className="mb-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-[#1A1F1C] rounded-xl border border-[#2D3A33] shadow-sm p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-slate-900">Transactions</h2>
-            <div className="text-sm text-gray-500">{filteredExpenses.length} items</div>
+            <h2 className="text-lg font-bold text-white">Transactions</h2>
+            <div className="text-sm text-gray-400">{filteredExpenses.length} items</div>
           </div>
 
           <div className="mb-4 flex flex-wrap gap-2">
@@ -374,8 +374,8 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                   selectedCategory === cat
-                    ? 'bg-[#10B981] text-black'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-[#10B981] text-white'
+                    : 'bg-[#2D3A33] text-gray-300 hover:bg-[#3D4A43]'
                 }`}
               >
                 {cat}
@@ -389,7 +389,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search expenses"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] text-sm"
+              className="w-full p-3 border border-[#3D4A43] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] text-sm bg-[#121715] text-white"
             />
           </div>
 
@@ -398,9 +398,9 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
           ) : filteredExpenses.length === 0 ? (
             <p className="text-gray-400 text-sm py-4">No matching transactions found.</p>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-gray-200">
+            <div className="overflow-hidden rounded-xl border border-[#2D3A33]">
               <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50 text-gray-600">
+                <thead className="bg-[#121715] text-gray-400">
                   <tr>
                     <th className="p-3 font-semibold">Title</th>
                     <th className="p-3 font-semibold">Category</th>
@@ -413,19 +413,19 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
                   {filteredExpenses.map((expense) => {
                     const valueInDisplayCurrency = convertCurrencyAmount(expense.amount, expense.currency || 'KES', currency);
                     return (
-                      <tr key={expense.id} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="p-3 font-medium text-slate-900">{expense.title}</td>
+                      <tr key={expense.id} className="border-t border-[#2D3A33] hover:bg-[#121715]">
+                        <td className="p-3 font-medium text-white">{expense.title}</td>
                         <td className="p-3">
-                          <span className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
+                          <span className="px-2 py-1 rounded-full bg-[#0F2D1F] text-[#34D399] text-[11px] font-semibold">
                             {expense.category}
                           </span>
                         </td>
-                        <td className="p-3 text-gray-600">{formatKenyaDateTime(expense.date)}</td>
-                        <td className="p-3 text-right font-semibold text-rose-500">-{formatCurrency(valueInDisplayCurrency, currency)}</td>
+                        <td className="p-3 text-gray-400">{formatKenyaDateTime(expense.date)}</td>
+                        <td className="p-3 text-right font-semibold text-rose-400">-{formatCurrency(valueInDisplayCurrency, currency)}</td>
                         <td className="p-3 text-right">
                           <button
                             onClick={() => handleDeleteExpense(expense.id)}
-                            className="text-xs text-red-500 hover:text-red-700 font-semibold"
+                            className="text-xs text-red-400 hover:text-red-300 font-semibold"
                           >
                             Delete
                           </button>
@@ -439,8 +439,8 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <h3 className="font-bold text-slate-900 mb-4">Category chart</h3>
+        <div className="bg-[#1A1F1C] rounded-xl border border-[#2D3A33] shadow-sm p-6">
+          <h3 className="font-bold text-white mb-4">Category chart</h3>
           <div className="space-y-4">
             {chartData.map((item) => {
               const maxValue = Math.max(...chartData.map((entry) => entry.value), 1);
@@ -448,10 +448,10 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
               return (
                 <div key={item.name}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-600">{item.name}</span>
-                    <span className="font-semibold text-slate-900">{formatCurrency(item.value, currency)}</span>
+                    <span className="text-gray-400">{item.name}</span>
+                    <span className="font-semibold text-white">{formatCurrency(item.value, currency)}</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="w-full bg-[#2D3A33] rounded-full h-2">
                     <div
                       className="h-2 rounded-full bg-[#10B981]"
                       style={{ width: `${width}%` }}
@@ -465,20 +465,20 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl text-slate-900">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#1A1F1C] rounded-2xl p-6 w-full max-w-md shadow-xl text-white border border-[#2D3A33]">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold">Add New Expense</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-slate-900 text-lg cursor-pointer"
+                className="text-gray-400 hover:text-white text-lg cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-xs font-semibold">
+              <div className="mb-4 p-3 bg-[#2D1518] border border-[#4A1A1D] text-[#FCA5A5] rounded-lg text-xs font-semibold">
                 {error}
               </div>
             )}
@@ -492,7 +492,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
                   placeholder="e.g. Morning Coffee"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                  className="w-full p-2.5 bg-[#121715] border border-[#3D4A43] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
                 />
               </div>
 
@@ -506,12 +506,12 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                    className="w-full p-2.5 bg-[#121715] border border-[#3D4A43] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
                   />
                   <select
                     value={currency}
                     onChange={(e) => handleCurrencyChange(e.target.value as 'KES' | 'USD' | 'EUR' | 'GBP')}
-                    className="w-28 p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                    className="w-28 p-2.5 bg-[#121715] border border-[#3D4A43] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
                   >
                     {CURRENCY_OPTIONS.map((option) => (
                       <option key={option.code} value={option.code}>{option.code}</option>
@@ -525,7 +525,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                  className="w-full p-2.5 bg-[#121715] border border-[#3D4A43] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
                 >
                   {CATEGORIES.filter((cat) => cat !== 'All').map((cat) => (
                     <option key={cat} value={cat}>
@@ -541,7 +541,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                  className="w-full p-2.5 bg-[#121715] border border-[#3D4A43] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
                 />
               </div>
 
@@ -549,7 +549,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ selectedCurrency = '
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-100 cursor-pointer"
+                  className="px-4 py-2 border border-[#3D4A43] rounded-lg text-sm font-semibold text-gray-400 hover:bg-[#222825] cursor-pointer"
                 >
                   Cancel
                 </button>

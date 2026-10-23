@@ -150,23 +150,23 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({ selectedCurrency = 'KE
   };
 
   return (
-    <div className="flex-1 p-8 bg-[#F3F6F4] text-slate-900 overflow-y-auto min-h-screen">
+    <div className="flex-1 p-8 bg-[#0E1310] text-white overflow-y-auto min-h-screen">
       {/* Top Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <span className="text-xs font-semibold tracking-wider text-gray-400 uppercase">BUDGETS</span>
-          <h2 className="text-3xl font-serif font-bold text-slate-900">Monthly Budgets</h2>
+          <h2 className="text-3xl font-serif font-bold text-white">Monthly Budgets</h2>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-5 py-2.5 bg-[#10B981] text-black font-semibold rounded-lg hover:bg-[#059669] transition-colors"
+          className="px-5 py-2.5 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] transition-colors"
         >
           + Set Budget
         </button>
       </div>
 
       {/* Dark Overview Card */}
-      <div className="bg-[#0E1310] text-white p-6 rounded-2xl shadow-xl mb-8 border border-white/5">
+      <div className="bg-[#1A1F1C] text-white p-6 rounded-2xl shadow-xl mb-8 border border-[#2D3A33]">
         <span className="text-xs text-[#10B981] font-mono tracking-widest uppercase font-semibold">
           {new Date().toLocaleDateString('en-KE', { month: 'long', year: 'numeric', timeZone: 'Africa/Nairobi' })} OVERVIEW
         </span>
@@ -221,22 +221,22 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({ selectedCurrency = 'KE
           const isOver = spent > convertedLimit && hasLimit;
 
           return (
-            <div key={cat.name} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div key={cat.name} className="bg-[#1A1F1C] border border-[#2D3A33] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <span className={`w-3 h-3 rounded-full ${cat.color}`} />
-                    <span className="font-bold text-slate-900">{cat.name}</span>
+                    <span className="font-bold text-white">{cat.name}</span>
                   </div>
                   <span className="text-xs text-gray-400">Monthly limit</span>
                 </div>
 
                 <div className="flex items-baseline justify-between mb-2">
-                  <span className="text-2xl font-serif font-bold text-slate-900">{formatCurrency(spent, selectedCurrency)}</span>
+                  <span className="text-2xl font-serif font-bold text-white">{formatCurrency(spent, selectedCurrency)}</span>
                   <span className="text-xs text-gray-400">/ {hasLimit ? formatCurrency(convertedLimit, selectedCurrency) : '—'}</span>
                 </div>
 
-                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-3">
+                <div className="w-full bg-[#2D3A33] h-2 rounded-full overflow-hidden mb-3">
                   <div
                     className={`h-full transition-all duration-300 ${isOver ? 'bg-rose-500' : cat.color}`}
                     style={{ width: `${hasLimit ? percentage : 0}%` }}
@@ -245,10 +245,10 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({ selectedCurrency = 'KE
               </div>
 
               <div className="flex justify-between items-center text-xs">
-                <span className={`font-semibold ${isOver ? 'text-rose-500' : 'text-gray-500'}`}>
+                <span className={`font-semibold ${isOver ? 'text-rose-400' : 'text-gray-400'}`}>
                   {hasLimit ? (isOver ? 'Over budget' : 'On track') : 'No limit set'}
                 </span>
-                <span className={`font-bold ${isOver ? 'text-rose-500' : 'text-[#10B981]'}`}>
+                <span className={`font-bold ${isOver ? 'text-rose-400' : 'text-[#10B981]'}`}>
                   {hasLimit ? `${percentage}%` : '—'}
                 </span>
               </div>
@@ -260,7 +260,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({ selectedCurrency = 'KE
       {/* Set Budget Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#18201B] border border-white/10 p-6 rounded-2xl w-full max-w-2xl text-white">
+          <div className="bg-[#1A1F1C] border border-[#2D3A33] p-6 rounded-2xl w-full max-w-2xl text-white">
             <h3 className="text-xl font-bold mb-4">Set Monthly Budgets</h3>
             <form onSubmit={handleBulkBudgetSave} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -279,7 +279,7 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({ selectedCurrency = 'KE
                         }))
                       }
                       placeholder="0"
-                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white"
+                      className="w-full bg-[#121715] border border-[#3D4A43] rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]"
                     />
                   </div>
                 ))}
@@ -289,13 +289,13 @@ export const BudgetsPage: React.FC<BudgetsPageProps> = ({ selectedCurrency = 'KE
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-white/5 text-xs text-gray-300 rounded-lg hover:bg-white/10"
+                  className="px-4 py-2 bg-[#2D3A33] text-xs text-gray-300 rounded-lg hover:bg-[#3D4A43]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#10B981] text-xs font-semibold text-black rounded-lg hover:bg-[#059669]"
+                  className="px-4 py-2 bg-[#10B981] text-xs font-semibold text-white rounded-lg hover:bg-[#059669]"
                 >
                   Save All Budgets
                 </button>
