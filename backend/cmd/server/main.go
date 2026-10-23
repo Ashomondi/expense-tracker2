@@ -8,6 +8,8 @@ import (
 
 	"backend/handlers"
 	"backend/models"
+	"backend/repository"
+	"backend/services"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -62,14 +64,23 @@ func main() {
 
 	// 3. Auto-migrate DB Schema
 	log.Println("Running database migrations...")
-	if err := db.AutoMigrate(&models.User{}, &models.Expense{}, &models.Budget{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Expense{}, &models.Budget{}, &models.MpesaImport{}); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	// 4. Instantiate Handlers
+	// 4. Instantiate Repositories
+	expenseRepo := repository.NewExpenseRepository(db)
+	mpesaRepo := repository.NewMpesaRepository(db)
+
+	// 5. Instantiate Services
+	expenseSvc := services.NewExpenseService(expenseRepo)
+	mpesaSvc := services.NewMpesaService(mpesaRepo, expenseRepo)
+
+	// 6. Instantiate Handlers
 	authHandler := handlers.NewAuthHandler(db, jwtKey)
 	expenseHandler := handlers.NewExpenseHandler(db, jwtKey)
 	budgetHandler := handlers.NewBudgetHandler(db, jwtKey)
+	mpesaHandler := handlers.NewMpesaHandler(db, jwtKey, mpesaSvc, expenseSvc)
 
 	// 5. Setup Router
 	mux := http.NewServeMux()
@@ -106,7 +117,55 @@ func main() {
 		}
 	})
 
-	// 6. Start Server
+	// M-Pesa Integration Endpoints
+	mux.HandleFunc("/api/integrations/mpesa/import", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			mpesaHandler.ImportTransactions(w, r)
+		case http.MethodDelete:
+			mpesaHandler.DeleteImport(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/integrations/mpesa/preview", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			mpesaHandler.PreviewTransaction(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/integrations/mpesa/imports", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			mpesaHandler.GetImportHistory(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/integrations/mpesa/status", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			mpesaHandler.GetImportStatus(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/integrations/mpesa/expense", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			mpesaHandler.CreateExpenseFromImport(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// 7. Start Server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
