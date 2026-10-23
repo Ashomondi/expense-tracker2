@@ -1,0 +1,11 @@
+.git
+.gitignore
+.venv
+server
+server.exe
+spendly.db
+*.log
+*.db
+Dockerfile*
+docker-compose*
+README.md
