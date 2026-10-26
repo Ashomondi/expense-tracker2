@@ -4,6 +4,7 @@ import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
 import { ExpensesPage } from './pages/ExpensesPage';
 import { BudgetsPage } from './pages/BudgetsPage';
+import { MpesaPage } from './pages/MpesaPage';
 import { API_BASE } from './api';
 
 interface User {
@@ -17,8 +18,8 @@ export const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<'landing' | 'auth'>('landing');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   
-  // 1. Updated activeTab state to include 'budgets'
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'budgets'>('dashboard');
+  // 1. Updated activeTab state to include 'budgets' and 'mpesa'
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'expenses' | 'budgets' | 'mpesa'>('dashboard');
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [selectedCurrency, setSelectedCurrency] = useState<'KES' | 'USD' | 'EUR' | 'GBP'>('KES');
 
@@ -100,6 +101,16 @@ export const App: React.FC = () => {
               >
                 Budgets
               </button>
+
+              {/* M-Pesa Integration Nav Link */}
+              <button
+                onClick={() => setActiveTab('mpesa')}
+                className={`w-full text-left px-4 py-3 font-semibold rounded-lg transition-colors ${
+                  activeTab === 'mpesa' ? 'bg-[#10B981] text-black' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                M-Pesa
+              </button>
             </nav>
           </div>
 
@@ -134,6 +145,7 @@ export const App: React.FC = () => {
           {activeTab === 'dashboard' && <Dashboard user={user} onLogout={handleLogout} selectedCurrency={selectedCurrency} />}
           {activeTab === 'expenses' && <ExpensesPage selectedCurrency={selectedCurrency} onCurrencyChange={setSelectedCurrency} />}
           {activeTab === 'budgets' && <BudgetsPage selectedCurrency={selectedCurrency} />}
+          {activeTab === 'mpesa' && <MpesaPage selectedCurrency={selectedCurrency} />}
         </div>
       </div>
     );
