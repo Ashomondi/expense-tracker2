@@ -21,7 +21,6 @@ COPY --from=builder /app/server .
 EXPOSE 8080
 
 ENV PORT=8080
-ENV DATABASE_URL=""
 ENV JWT_SECRET="change-in-production"
 ENV FRONTEND_URL="http://localhost:5173"
 
