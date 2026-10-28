@@ -15,7 +15,8 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        //target: 'http://localhost:8080',
+        target:"https://spendly-api-pzew.onrender.com",
         changeOrigin: true,
         secure: false,
       },
