@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 	"unicode"
 
@@ -47,6 +48,10 @@ func isValidPassword(password string) bool {
 	}
 
 	return hasLetter && hasNumber && hasSpecial
+}
+
+func isSecureRequest(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 
 // SignUp Endpoint
@@ -160,14 +165,23 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set HTTP-Only Cookie
+	secure := isSecureRequest(r)
+	sameSite := http.SameSiteLaxMode
+	if secure {
+		// The deployed frontend and API are cross-site, so the browser requires
+		// SameSite=None and Secure for the session cookie to be sent.
+		sameSite = http.SameSiteNoneMode
+	}
+
+	// Set HTTP-only session cookie.
 	http.SetCookie(w, &http.Cookie{
 		Name:     "spendly_token",
 		Value:    tokenString,
 		Expires:  expirationTime,
 		HttpOnly: true,
+		Secure:   secure,
 		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
+		SameSite: sameSite,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
@@ -193,12 +207,19 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 // Logout Endpoint
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	secure := isSecureRequest(r)
+	sameSite := http.SameSiteLaxMode
+	if secure {
+		sameSite = http.SameSiteNoneMode
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "spendly_token",
 		Value:    "",
 		Expires:  time.Now().Add(-1 * time.Hour),
 		HttpOnly: true,
+		Secure:   secure,
 		Path:     "/",
+		SameSite: sameSite,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
