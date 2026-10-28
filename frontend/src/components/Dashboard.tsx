@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE } from '../api';
+import { API_BASE, apiFetch } from '../api';
 
 interface User {
   id: number;
@@ -27,7 +27,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/expenses`);
+        const res = await apiFetch(`${API_BASE}/api/expenses`);
         if (res.ok) {
           const data = await res.json();
           setExpenses(data || []);
