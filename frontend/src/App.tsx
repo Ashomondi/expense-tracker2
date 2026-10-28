@@ -4,7 +4,7 @@ import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
 import { ExpensesPage } from './components/ExpensesPage';
 import { BudgetsPage } from './components/BudgetsPage';
-import { API_BASE } from './api';
+import { API_BASE, apiFetch } from './api';
 
 interface User {
   id: number;
@@ -24,7 +24,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/me`);
+        const res = await apiFetch(`${API_BASE}/api/me`);
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
@@ -41,7 +41,7 @@ export const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_BASE}/api/logout`, { method: 'POST' });
+      await apiFetch(`${API_BASE}/api/logout`, { method: 'POST' });
     } catch (err) {
       console.error('Logout failed:', err);
     } finally {
