@@ -5,30 +5,43 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"backend/handlers"
 	"backend/models"
 
-	"gorm.io/driver/sqlite"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-// Simple CORS & Security Middleware
+const productionFrontendOrigin = "https://expense-tracker2-ace-33f2.vercel.app"
+
+// enableCORS allows the deployed frontend and any additional configured origins.
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Adjust Origin URL in production
-		frontendURL := os.Getenv("FRONTEND_URL")
-		if frontendURL == "" {
-			frontendURL = "http://localhost:5173"
+		allowedOrigins := map[string]struct{}{
+			"http://localhost:5173":  {},
+			productionFrontendOrigin: {},
 		}
-		w.Header().Set("Access-Control-Allow-Origin", frontendURL)
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		for _, configuredOrigin := range strings.Split(os.Getenv("FRONTEND_URL"), ",") {
+			configuredOrigin = strings.TrimRight(strings.TrimSpace(configuredOrigin), "/")
+			if configuredOrigin != "" {
+				allowedOrigins[configuredOrigin] = struct{}{}
+			}
+		}
+
+		origin := r.Header.Get("Origin")
+		if _, allowed := allowedOrigins[origin]; allowed {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Add("Vary", "Origin")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+		}
 
 		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 
@@ -55,7 +68,7 @@ func main() {
 		log.Println("Connecting to SQLite database...")
 		db, err = gorm.Open(sqlite.Open("spendly.db"), &gorm.Config{})
 	}
-	
+
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -72,6 +85,11 @@ func main() {
 
 	// 5. Setup Router
 	mux := http.NewServeMux()
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
 
 	// Authentication Endpoints
 	mux.HandleFunc("/api/signup", authHandler.SignUp)
