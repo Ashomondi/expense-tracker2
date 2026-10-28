@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Activity,
+  HeartPulse,
+  Plus,
+  Receipt,
+  Target,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
 import { API_BASE } from '../api';
 import '../styles/pages/Dashboard.css';
 
@@ -24,15 +33,15 @@ interface DashboardProps {
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; dot: string; text: string; bar: string }> = {
-  'Food & Drink': { bg: 'bg-amber-100', dot: 'bg-amber-500', text: 'text-amber-800', bar: 'bg-amber-500' },
-  'Transport': { bg: 'bg-blue-100', dot: 'bg-blue-500', text: 'text-blue-800', bar: 'bg-blue-500' },
-  'Entertainment': { bg: 'bg-purple-100', dot: 'bg-purple-500', text: 'text-purple-800', bar: 'bg-purple-500' },
-  'Utilities': { bg: 'bg-cyan-100', dot: 'bg-cyan-500', text: 'text-cyan-800', bar: 'bg-cyan-500' },
-  'Health': { bg: 'bg-rose-100', dot: 'bg-rose-500', text: 'text-rose-800', bar: 'bg-rose-500' },
-  'Shopping': { bg: 'bg-amber-100', dot: 'bg-amber-500', text: 'text-amber-800', bar: 'bg-amber-500' },
+  'Food & Drink': { bg: 'bg-amber-500/15', dot: 'bg-amber-400', text: 'text-amber-300', bar: 'bg-amber-400' },
+  'Transport': { bg: 'bg-blue-500/15', dot: 'bg-blue-400', text: 'text-blue-300', bar: 'bg-blue-400' },
+  'Entertainment': { bg: 'bg-violet-500/15', dot: 'bg-violet-400', text: 'text-violet-300', bar: 'bg-violet-400' },
+  'Utilities': { bg: 'bg-cyan-500/15', dot: 'bg-cyan-400', text: 'text-cyan-300', bar: 'bg-cyan-400' },
+  'Health': { bg: 'bg-rose-500/15', dot: 'bg-rose-400', text: 'text-rose-300', bar: 'bg-rose-400' },
+  'Shopping': { bg: 'bg-orange-500/15', dot: 'bg-orange-400', text: 'text-orange-300', bar: 'bg-orange-400' },
 };
 
-const DEFAULT_COLOR = { bg: 'bg-gray-100', dot: 'bg-gray-500', text: 'text-gray-800', bar: 'bg-gray-500' };
+const DEFAULT_COLOR = { bg: 'bg-white/10', dot: 'bg-gray-400', text: 'text-gray-300', bar: 'bg-gray-400' };
 
 const CURRENCY_OPTIONS = [
   { code: 'KES', label: 'Kenyan Shilling', symbol: 'KSh' },
@@ -344,7 +353,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           onClick={() => setIsAddModalOpen(true)}
           className="dashboard-add-btn"
         >
-          + Add Expense
+          <Plus size={16} strokeWidth={2.5} aria-hidden />
+          Add Expense
         </button>
       </div>
 
@@ -372,14 +382,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Total Spent</span>
-            <div className="metric-icon"></div>
+            <div className="metric-icon">
+              <Wallet size={16} strokeWidth={2.2} aria-hidden />
+            </div>
           </div>
           <div className="metric-content">
             <div className="metric-value">
               {formatCurrency(totalSpent, newCurrency)}
             </div>
             <div className="metric-change">
-              ↗ +12% vs last month
+              <TrendingUp size={12} strokeWidth={2.5} aria-hidden />
+              +12% vs last month
             </div>
           </div>
         </div>
@@ -388,12 +401,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Budget Used</span>
-            <div className="metric-icon"></div>
+            <div className="metric-icon">
+              <Target size={16} strokeWidth={2.2} aria-hidden />
+            </div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{budgetUsedPct}%</div>
             <div className="metric-change">
-              ↗ {formatCurrency(budgetRemaining, newCurrency)} remaining
+              <Activity size={12} strokeWidth={2.5} aria-hidden />
+              {formatCurrency(budgetRemaining, newCurrency)} remaining
             </div>
           </div>
         </div>
@@ -402,12 +418,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Transactions</span>
-            <div className="metric-icon"></div>
+            <div className="metric-icon">
+              <Receipt size={16} strokeWidth={2.2} aria-hidden />
+            </div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{expenses.length}</div>
             <div className="metric-change">
-              ↗ +3 this week
+              <TrendingUp size={12} strokeWidth={2.5} aria-hidden />
+              +3 this week
             </div>
           </div>
         </div>
@@ -416,12 +435,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Budget Health</span>
-            <div className="metric-icon"></div>
+            <div className="metric-icon">
+              <HeartPulse size={16} strokeWidth={2.2} aria-hidden />
+            </div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{budgetHealthPct}%</div>
             <div className="metric-change">
-              ↗ On track
+              <Activity size={12} strokeWidth={2.5} aria-hidden />
+              On track
             </div>
           </div>
         </div>
@@ -444,8 +466,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
             <svg className="chart-svg" viewBox="0 0 500 200">
               <defs>
                 <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
               {/* Grid Lines */}
@@ -462,17 +484,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
               <path
                 d="M 20 80 Q 100 30 180 85 T 340 30 T 480 150"
                 fill="none"
-                stroke="#10B981"
+                stroke="#3B82F6"
                 strokeWidth="3"
               />
 
               {/* Data Points */}
-              <circle cx="20" cy="80" r="4" fill="#10B981" />
-              <circle cx="110" cy="50" r="4" fill="#10B981" />
-              <circle cx="200" cy="85" r="4" fill="#10B981" />
-              <circle cx="290" cy="30" r="4" fill="#10B981" />
-              <circle cx="380" cy="60" r="4" fill="#10B981" />
-              <circle cx="480" cy="150" r="4" fill="#10B981" />
+              <circle cx="20" cy="80" r="4" fill="#3B82F6" />
+              <circle cx="110" cy="50" r="4" fill="#3B82F6" />
+              <circle cx="200" cy="85" r="4" fill="#3B82F6" />
+              <circle cx="290" cy="30" r="4" fill="#3B82F6" />
+              <circle cx="380" cy="60" r="4" fill="#3B82F6" />
+              <circle cx="480" cy="150" r="4" fill="#3B82F6" />
             </svg>
 
             {/* X-Axis Labels */}
