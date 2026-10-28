@@ -1,0 +1,28 @@
+
+# 2026-10-21 16:30:41.940544
++check the repo and what it entails and send a feedback of what still needs working
+
+# 2026-10-21 16:31:50.393901
++/exit
+
+# 2026-10-21 16:32:38.049801
++Review this entire Expense Tracker repository.
++
++Do not modify any files yet.
++
++Explain:
++1. What the application does and how it works.
++2. The frontend and backend architecture.
++3. How the database is structured and connected.
++4. Which features are implemented and which are incomplete.
++5. Bugs, security risks, and missing error handling.
++6. What still needs to be done, prioritized as critical, high, medium, and low.
++
++Inspect the relevant source files before making conclusions.
++Give me a practical improvement plan.
+
+# 2026-10-27 09:49:23.760724
++yes
+
+# 2026-10-27 09:49:58.027710
++go through the project and give a summary of what it already has
