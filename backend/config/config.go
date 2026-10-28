@@ -24,7 +24,7 @@ func Load() *Config {
 
 	cfg := &Config{
 		Port:          getEnv("PORT", "8080"),
-		DBUrl:         mustGetEnv("DB_URL"),
+		DBUrl:         mustGetEnv("DATABASE_URL"),
 		JWTSecret:     mustGetEnv("JWT_SECRET"),
 		JWTExpiration: 24 * time.Hour,
 	}
