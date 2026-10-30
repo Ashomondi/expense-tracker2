@@ -156,6 +156,15 @@ func main() {
 		}
 	})
 
+	mux.HandleFunc("/api/integrations/mpesa/statement", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			mpesaHandler.UploadStatement(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
 	mux.HandleFunc("/api/integrations/mpesa/expense", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:

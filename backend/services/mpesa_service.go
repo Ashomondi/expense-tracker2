@@ -22,19 +22,22 @@ type MpesaService interface {
 	GetImportByID(userID uint, id uint) (*models.MpesaImport, error)
 	DeleteImport(userID uint, id uint) error
 	CreateExpenseFromImport(userID uint, importID uint) (*models.Expense, error)
+	ParseStatement(content []byte, filename string) (*models.MpesaStatementPreviewResult, error)
 }
 
 type mpesaService struct {
-	mpesaRepo    repository.MpesaRepository
-	expenseRepo  repository.ExpenseRepository
-	parser       *MpesaParser
+	mpesaRepo       repository.MpesaRepository
+	expenseRepo     repository.ExpenseRepository
+	parser          *MpesaParser
+	statementParser *StatementParser
 }
 
 func NewMpesaService(mpesaRepo repository.MpesaRepository, expenseRepo repository.ExpenseRepository) MpesaService {
 	return &mpesaService{
-		mpesaRepo:   mpesaRepo,
-		expenseRepo: expenseRepo,
-		parser:      NewMpesaParser(),
+		mpesaRepo:       mpesaRepo,
+		expenseRepo:     expenseRepo,
+		parser:          NewMpesaParser(),
+		statementParser: NewStatementParser(),
 	}
 }
 
@@ -281,4 +284,8 @@ func (s *mpesaService) CreateExpenseFromImport(userID uint, importID uint) (*mod
 	}
 
 	return expense, nil
+}
+
+func (s *mpesaService) ParseStatement(content []byte, filename string) (*models.MpesaStatementPreviewResult, error) {
+	return s.statementParser.ParseStatement(content, filename)
 }
