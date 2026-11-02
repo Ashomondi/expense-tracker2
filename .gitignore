@@ -1,4 +1,7 @@
 .aider*
 .env
-.env
-.env
+node_modules/
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins*
+backend/spendly-server
