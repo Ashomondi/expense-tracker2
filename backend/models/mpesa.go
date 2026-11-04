@@ -99,6 +99,18 @@ type MpesaParserResult struct {
 	Errors          []string
 }
 
+type MpesaStatementPreviewResult struct {
+	TotalParsed  int                `json:"total_parsed"`
+	Transactions []MpesaImportInput `json:"transactions"`
+	Warnings     []string           `json:"warnings,omitempty"`
+}
+
+type MpesaStatementUploadResponse struct {
+	Preview *MpesaStatementPreviewResult `json:"preview,omitempty"`
+	Import  *MpesaImportResult          `json:"import,omitempty"`
+	Message string                      `json:"message"`
+}
+
 func (m *MpesaImport) ToExpenseInput(category string) CreateExpenseInput {
 	currency := m.Currency
 	if currency == "" {
