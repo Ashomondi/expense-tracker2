@@ -22,30 +22,55 @@ A Flutter companion app for Spendly that automates personal expense tracking via
 
 ---
 
-## Building the APK
+## Building & Installing the APK
 
 ### Prerequisites
 - Flutter SDK (3.24+ recommended)
-- Android SDK 34+
-- Java 17 or 21 OpenJDK
+- Android SDK (API 34+)
+- OpenJDK 17 or 21
 
-### Run Debug / Test
+### 1. Build Commands
+Run from the `mobile/` directory:
+
 ```bash
+# Run unit & widget tests
 flutter test
-flutter run
-```
 
-### Build APK
-```bash
-# Debug APK
-flutter build apk --debug
-
-# Release APK
+# Build Release APK (Recommended for physical devices and sideloading)
 flutter build apk --release
+
+# (Optional) Build Per-ABI APKs for smaller file size
+flutter build apk --split-per-abi
 ```
 
-The compiled APK will be located at:
-`build/app/outputs/flutter-apk/app-debug.apk` (or `app-release.apk`)
+The compiled APK will be generated at:
+- Universal Release APK: `mobile/build/app/outputs/flutter-apk/app-release.apk`
+- Per-ABI APKs: `mobile/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
+
+---
+
+## 📲 How to Install on Android Devices
+
+> [!IMPORTANT]
+> **Always install `app-release.apk` on physical Android devices!**
+> Do not attempt to sideload `app-debug.apk` via Android's file manager: Android's package installer flags debug builds with `android:testOnly="true"` and blocks them with *"App not installed as package appears to be invalid"*.
+
+### Step-by-Step Installation:
+1. **Transfer the APK to your phone:**
+   - Transfer `app-release.apk` via USB cable, Google Drive, WhatsApp, Telegram, or local HTTP server.
+2. **Allow Unknown Sources:**
+   - When tapping the APK, if prompted, enable **"Allow from this source"** for your file manager or browser (*Settings > Apps > Special app access > Install unknown apps*).
+3. **Google Play Protect Prompt:**
+   - Because Spendly companion requests sensitive SMS permissions (`READ_SMS`, `RECEIVE_SMS`) to read M-Pesa statements, Google Play Protect may display a warning: *"Blocked by Play Protect"*.
+   - Tap **"More details"** and select **"Install anyway"**.
+4. **Grant SMS Permission:**
+   - On first launch, Spendly displays the Kenyan Data Protection compliant consent dialog. Tap **"Grant Access & Scan"** to allow Spendly to read only M-Pesa messages.
+
+### Alternative: Install via ADB (Developer Mode)
+If your phone is connected to your computer with USB Debugging enabled:
+```bash
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+```
 
 ---
 
