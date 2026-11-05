@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -268,4 +269,89 @@ func (h *MpesaHandler) DeleteImport(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Import deleted"})
+}
+
+func (h *MpesaHandler) UploadStatement(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	user, err := h.getUser(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		return
+	}
+
+	var fileBytes []byte
+	var filename string
+
+	// Support both multipart file upload and raw body upload
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "" && len(contentType) >= 19 && contentType[:19] == "multipart/form-data" {
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to parse multipart form"})
+			return
+		}
+
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Missing file field in upload"})
+			return
+		}
+		defer file.Close()
+
+		filename = header.Filename
+		fileBytes, err = io.ReadAll(file)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to read uploaded file"})
+			return
+		}
+	} else {
+		// Read directly from body
+		var err error
+		fileBytes, err = io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to read request body"})
+			return
+		}
+		filename = "statement.csv"
+	}
+
+	preview, err := h.MpesaSvc.ParseStatement(fileBytes, filename)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// If preview mode requested, return parsed rows without committing to DB
+	if r.URL.Query().Get("preview") == "true" {
+		json.NewEncoder(w).Encode(models.MpesaStatementUploadResponse{
+			Preview: preview,
+			Message: "Statement preview generated successfully",
+		})
+		return
+	}
+
+	// Commit transactions to database
+	importResult, err := h.MpesaSvc.ImportTransactions(user.ID, preview.Transactions)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to save statement transactions"})
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.MpesaStatementUploadResponse{
+		Preview: preview,
+		Import:  importResult,
+		Message: "Statement transactions imported successfully",
+	})
 }

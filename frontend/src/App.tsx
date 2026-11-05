@@ -41,6 +41,12 @@ export const App: React.FC = () => {
     };
 
     checkAuthStatus();
+
+    // Auto-switch to M-Pesa tab when incoming text is shared via PWA share target
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('text') || urlParams.has('share_text') || urlParams.has('body')) {
+      setActiveTab('mpesa');
+    }
   }, []);
 
   const handleLogout = async () => {

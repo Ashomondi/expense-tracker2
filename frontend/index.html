@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10B981" />
+    <meta name="description" content="Spendly - Personal finance, smart budget tracker and M-Pesa automated transaction insights" />
+    <link rel="manifest" href="/manifest.json" />
     <title>Spendly - Personal Finance, Reimagined</title>
     <!-- Google Fonts for Instrument Serif & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,6 +15,15 @@
   </head>
   <body class="bg-bg-dark text-white font-sans antialiased">
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.debug('Service Worker registration skipped:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
