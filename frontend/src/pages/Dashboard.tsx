@@ -26,6 +26,12 @@ interface Expense {
   date: string;
 }
 
+interface Budget {
+  id: number;
+  category: string;
+  amount: number;
+}
+
 interface DashboardProps {
   user: User;
   onLogout?: () => void;
@@ -185,6 +191,7 @@ const parseQuickExpense = (input: string) => {
 
 export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = 'KES' }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -288,15 +295,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     }
   };
 
-  const totalSpent = expenses.reduce((sum, item) => {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const currentMonthExpenses = expenses.filter((item) => {
+    const date = new Date(item.date);
+    return date >= monthStart && date <= now;
+  });
+  const totalSpent = currentMonthExpenses.reduce((sum, item) => {
     const sourceCurrency = item.currency || 'KES';
     return sum + convertCurrencyAmount(item.amount, sourceCurrency, displayCurrency);
   }, 0);
 
-  const totalBudget = 1900;
-  const budgetUsedPct = Math.min(Math.round((totalSpent / totalBudget) * 100), 100);
-  const budgetRemaining = Math.max(totalBudget - totalSpent, 0);
-  const budgetHealthPct = 100 - budgetUsedPct;
+  const totalBudget = budgets.reduce(
+    (sum, budget) => sum + convertCurrencyAmount(budget.amount, 'KES', displayCurrency),
+    0,
+  );
+  const budgetUsedPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  const budgetRemaining = totalBudget - totalSpent;
+  const budgetHealthPct = totalBudget > 0 ? Math.max(0, 100 - budgetUsedPct) : 0;
 
   const formattedMonth = new Intl.DateTimeFormat('en-KE', {
     month: 'long',
@@ -320,22 +336,62 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     }
   };
 
+  const fetchBudgets = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/budgets`, { credentials: 'include' });
+      if (res.ok) setBudgets((await res.json()) || []);
+    } catch (err) {
+      console.error('Failed to fetch budgets:', err);
+    }
+  };
+
   useEffect(() => {
     fetchExpenses();
+    fetchBudgets();
   }, []);
 
-  const budgetCategories = [
-    { name: 'Food & Drink', spent: 110, total: 800, pct: 14 },
-    { name: 'Transport', spent: 57, total: 200, pct: 29 },
-    { name: 'Entertainment', spent: 26, total: 150, pct: 17 },
-    { name: 'Utilities', spent: 121, total: 300, pct: 40 },
-    { name: 'Health', spent: 73, total: 200, pct: 36 },
-    { name: 'Shopping', spent: 35, total: 250, pct: 14 },
-  ].map((category) => ({
-    ...category,
-    spent: convertCurrencyAmount(category.spent, 'KES', displayCurrency),
-    total: convertCurrencyAmount(category.total, 'KES', displayCurrency),
+  const budgetCategories = budgets.map((budget) => {
+    const spent = currentMonthExpenses
+      .filter((expense) => expense.category === budget.category)
+      .reduce(
+        (sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency),
+        0,
+      );
+    const total = convertCurrencyAmount(budget.amount, 'KES', displayCurrency);
+    return { name: budget.category, spent, total, pct: total > 0 ? Math.round((spent / total) * 100) : 0 };
+  });
+
+  const monthlySpending = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
+    const monthExpenses = expenses.filter((expense) => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getFullYear() === date.getFullYear() && expenseDate.getMonth() === date.getMonth();
+    });
+    return {
+      label: new Intl.DateTimeFormat('en-KE', { month: 'short', timeZone: 'Africa/Nairobi' }).format(date),
+      total: monthExpenses.reduce(
+        (sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency),
+        0,
+      ),
+    };
+  });
+  const maxMonthlySpending = Math.max(...monthlySpending.map((month) => month.total), 0);
+  const chartPoints = monthlySpending.map((month, index) => ({
+    x: 20 + (460 * index) / (monthlySpending.length - 1),
+    y: maxMonthlySpending > 0 ? 170 - (month.total / maxMonthlySpending) * 140 : 170,
   }));
+  const chartLine = chartPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+  const chartArea = `${chartLine} L ${chartPoints[chartPoints.length - 1].x} 190 L ${chartPoints[0].x} 190 Z`;
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousMonthTotal = expenses
+    .filter((expense) => {
+      const date = new Date(expense.date);
+      return date.getFullYear() === previousMonth.getFullYear() && date.getMonth() === previousMonth.getMonth();
+    })
+    .reduce((sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency), 0);
+  const spendingChange = previousMonthTotal > 0
+    ? Math.round(((totalSpent - previousMonthTotal) / previousMonthTotal) * 100)
+    : null;
 
   const currentDateLabel = formattedMonth.toUpperCase();
 
@@ -392,7 +448,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
             </div>
             <div className="metric-change">
               <TrendingUp size={12} strokeWidth={2.5} aria-hidden />
-              +12% vs last month
+              {spendingChange === null ? 'No previous month data' : `${spendingChange > 0 ? '+' : ''}${spendingChange}% vs last month`}
             </div>
           </div>
         </div>
@@ -409,7 +465,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
             <div className="metric-value">{budgetUsedPct}%</div>
             <div className="metric-change">
               <Activity size={12} strokeWidth={2.5} aria-hidden />
-              {formatCurrency(budgetRemaining, newCurrency)} remaining
+              {totalBudget > 0 ? `${formatCurrency(budgetRemaining, newCurrency)} ${budgetRemaining >= 0 ? 'remaining' : 'over budget'}` : 'Set budgets to track spending'}
             </div>
           </div>
         </div>
@@ -426,7 +482,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
             <div className="metric-value">{expenses.length}</div>
             <div className="metric-change">
               <TrendingUp size={12} strokeWidth={2.5} aria-hidden />
-              +3 this week
+              {currentMonthExpenses.length} this month
             </div>
           </div>
         </div>
@@ -443,7 +499,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
             <div className="metric-value">{budgetHealthPct}%</div>
             <div className="metric-change">
               <Activity size={12} strokeWidth={2.5} aria-hidden />
-              On track
+              {totalBudget === 0 ? 'No budgets set' : budgetUsedPct >= 100 ? 'Over budget' : 'On track'}
             </div>
           </div>
         </div>
@@ -458,7 +514,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
               <h3 className="chart-title">Monthly Spending</h3>
               <p className="chart-subtitle">Last 6 months</p>
             </div>
-            <span className="chart-badge">May – Oct</span>
+            <span className="chart-badge">{monthlySpending[0].label} – {monthlySpending[5].label}</span>
           </div>
 
           {/* SVG Line Chart Representation */}
@@ -477,34 +533,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
 
               {/* Area Under Curve */}
               <path
-                d="M 20 80 Q 100 30 180 85 T 340 30 T 480 150 L 480 190 L 20 190 Z"
+                d={chartArea}
                 fill="url(#gradient)"
               />
               {/* Smooth Curve */}
               <path
-                d="M 20 80 Q 100 30 180 85 T 340 30 T 480 150"
+                d={chartLine}
                 fill="none"
                 stroke="#3B82F6"
                 strokeWidth="3"
               />
 
               {/* Data Points */}
-              <circle cx="20" cy="80" r="4" fill="#3B82F6" />
-              <circle cx="110" cy="50" r="4" fill="#3B82F6" />
-              <circle cx="200" cy="85" r="4" fill="#3B82F6" />
-              <circle cx="290" cy="30" r="4" fill="#3B82F6" />
-              <circle cx="380" cy="60" r="4" fill="#3B82F6" />
-              <circle cx="480" cy="150" r="4" fill="#3B82F6" />
+              {chartPoints.map((point, index) => <circle key={monthlySpending[index].label} cx={point.x} cy={point.y} r="4" fill="#3B82F6" />)}
             </svg>
 
             {/* X-Axis Labels */}
             <div className="chart-labels">
-              <span>May</span>
-              <span>Jun</span>
-              <span>Jul</span>
-              <span>Aug</span>
-              <span>Sep</span>
-              <span>Oct</span>
+              {monthlySpending.map((month, index) => <span key={`${month.label}-${index}`}>{month.label}</span>)}
             </div>
           </div>
         </div>
@@ -524,7 +570,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
                   <div className="budget-bar-wrapper">
                     <div
                       className={`budget-bar ${color.bar}`}
-                      style={{ width: `${cat.pct}%` }}
+                      style={{ width: `${Math.min(cat.pct, 100)}%` }}
                     />
                   </div>
                   <div className="budget-range">
@@ -574,7 +620,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
                     </div>
                   </div>
                   <div className="transaction-amount">
-                    -{formatCurrency(item.amount, newCurrency)}
+                    -{formatCurrency(convertCurrencyAmount(item.amount, item.currency || 'KES', newCurrency), newCurrency)}
                   </div>
                 </div>
               );
