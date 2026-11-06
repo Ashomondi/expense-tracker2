@@ -1,178 +1,149 @@
-Expense Tracker API
+# Spendly
 
-A modern expense tracking application built with Go that helps users manage their finances, track spending habits, create budgets, and analyze expenses in real time.
+Spendly is a personal expense tracker with a React and TypeScript web app and a Go HTTP API. Signed-in users can record expenses, set category budgets, and paste M-Pesa SMS messages to parse and track transactions.
 
-Features
-Authentication
-User signup
-User login
-JWT authentication
-Password hashing with bcrypt
-Expense Management
-Add expenses
-Update expenses
-Delete expenses
-View all expenses
-Filter by category
-Budgeting
-Set monthly budgets
-Track spending limits
-Budget alerts
-Analytics
-Monthly expense summaries
-Category breakdowns
-Spending trends
-Financial insights
-Tech Stack
-Technology	Purpose
-Go	Backend language
-Gin / Fiber	Web framework
-PostgreSQL	Database
-JWT	Authentication
-bcrypt	Password hashing
-React (optional)	Frontend
-Docker (optional)	Containerization
-Project Structure
-expense-tracker/
-│
-├── main.go
-├── go.mod
-├── handlers/
-│   ├── auth.go
-│   ├── expenses.go
-│   └── budgets.go
-│
-├── middleware/
-│   └── jwt.go
-│
-├── models/
-│   ├── user.go
-│   ├── expense.go
-│   └── budget.go
-│
-├── storage/
-│   └── database.go
-│
-├── routes/
-│   └── routes.go
-│
-└── utils/
-    └── helpers.go
-Installation
-Clone the Repository
-git clone https://github.com/yourusername/expense-tracker.git
-cd expense-tracker
-Install Dependencies
-go mod tidy
-Environment Variables
+## What is implemented
 
-Create a .env file in the root directory:
+- Landing page and email/password sign-up and sign-in.
+- Expense list with manual entry, quick entry, currency selection, and deletion.
+- Category budgets stored per user.
+- M-Pesa SMS import, parsing preview, import history and status counts, duplicate detection, and conversion of an import into an expense.
+- Dashboard showing expense totals, category spending, recent expenses, and budget presentation.
 
-PORT=8080
-DB_URL=postgres://username:password@localhost:5432/expense_tracker
-JWT_SECRET=your_secret_key
-Run the Application
-go run main.go
+The M-Pesa feature processes SMS text pasted by the user; there is no direct connection to a phone or Safaricom account. The dashboard includes a presentation chart and sample budget figures. The Budgets page reads and writes saved budgets. Currency conversion uses fixed rates in the frontend, not a live exchange-rate feed.
 
-Server runs on:
+## Project structure
 
-http://localhost:8080
-API Endpoints
-Authentication
-Register User
-POST /signup
-Request Body
+```text
+backend/
+  cmd/server/       Server entry point and active API route setup
+  handlers/         HTTP request handlers
+  services/         Expense and M-Pesa business logic and SMS parser
+  repository/       Database access used by services
+  models/           User, expense, budget, and M-Pesa import records
+  middleware/       CORS, logging, and JWT middleware helpers
+  utils/            Authentication, validation, response, and helper functions
+  tests/            Go tests
+  docs/api.md       API notes (some sections describe an older API shape)
+frontend/
+  src/App.tsx       Session check and authenticated navigation
+  src/pages/        Landing, auth, dashboard, expenses, budgets, and M-Pesa screens
+  src/styles/       Page-specific styles
+docker-compose.yml  Frontend and backend container setup
+```
+
+## Requirements
+
+- Go 1.25 or later
+- Node.js and npm
+- Docker Compose (optional)
+
+## Run locally
+
+### Start the backend
+
+```sh
+cd backend
+JWT_SECRET="replace-this-with-a-long-random-secret" go run ./cmd/server
+```
+
+The API listens on `http://localhost:8080` by default. With no `DATABASE_URL`, it creates a SQLite database named `spendly.db` in the backend working directory. Set `DATABASE_URL` to a PostgreSQL connection string to use PostgreSQL instead. The server automatically creates or updates its tables on startup.
+
+Configuration:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `8080` | API listening port |
+| `DATABASE_URL` | unset | PostgreSQL connection string; unset uses SQLite |
+| `JWT_SECRET` | Development fallback in code | Secret used to sign session tokens; set a strong value outside local development |
+| `FRONTEND_URL` | `http://localhost:5173` | Browser origin allowed by CORS |
+
+### Start the frontend
+
+In a second terminal:
+
+```sh
+cd frontend
+npm install
+VITE_API_URL=http://localhost:8080 npm run dev
+```
+
+Open `http://localhost:5173`. Setting `VITE_API_URL` directs API calls to the local backend. If omitted, the Vite `/api` development proxy currently targets the hosted Spendly API.
+
+### Run with Docker Compose
+
+From the project root:
+
+```sh
+JWT_SECRET="replace-this-with-a-long-random-secret" docker compose up --build
+```
+
+Compose exposes the frontend on port `5173` and backend on port `8080`. The backend uses SQLite because Compose leaves `DATABASE_URL` empty; its data is kept in the `backend_data` volume.
+
+## API
+
+The active server is `backend/cmd/server/main.go` and uses Go's standard `net/http` router. Requests that need a user session authenticate through the HTTP-only `spendly_token` cookie. The frontend sends requests with credentials enabled. Login tokens expire after 24 hours.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/signup` | Create an account (`full_name`, `email`, `password`) |
+| `POST` | `/api/login` | Sign in (`email`, `password`) and set session cookie |
+| `GET` | `/api/me` | Return the current session user |
+| `POST` | `/api/logout` | Clear the session cookie |
+| `GET` | `/api/expenses` | List the signed-in user's expenses |
+| `POST` | `/api/expenses` | Create an expense |
+| `DELETE` | `/api/expenses` | Delete an expense using `{ "id": 1 }` in the request body |
+| `GET` | `/api/budgets` | List the signed-in user's category budgets |
+| `POST`, `PUT` | `/api/budgets` | Create or update a budget (`category`, `amount`) |
+| `POST` | `/api/integrations/mpesa/preview` | Parse and preview an SMS transaction |
+| `POST` | `/api/integrations/mpesa/import` | Import a `transactions` array of SMS messages |
+| `GET` | `/api/integrations/mpesa/imports` | List import records; optional `limit` query parameter |
+| `GET` | `/api/integrations/mpesa/status` | Return import counts and recent records |
+| `POST` | `/api/integrations/mpesa/expense` | Create an expense from `{ "import_id": 1 }` |
+| `DELETE` | `/api/integrations/mpesa/import` | Delete an import record using `{ "import_id": 1 }` |
+
+An expense request uses this shape:
+
+```json
 {
-  "name": "Ashley",
-  "email": "ashley@example.com",
-  "password": "password123"
+  "title": "Groceries",
+  "amount": 1250,
+  "category": "Food & Drink",
+  "currency": "KES",
+  "date": "2026-11-06"
 }
-Login User
-POST /login
-Request Body
+```
+
+For SMS import, send one raw message per transaction:
+
+```json
 {
-  "email": "ashley@example.com",
-  "password": "password123"
+  "transactions": [
+    { "raw_message": "Paste an M-Pesa SMS here" }
+  ]
 }
-Expenses
-Get All Expenses
-GET /expenses
-Create Expense
-POST /expenses
-Request Body
-{
-  "title": "Transport",
-  "amount": 500,
-  "category": "Travel"
-}
-Update Expense
-PUT /expenses/:id
-Delete Expense
-DELETE /expenses/:id
-Budgets
-Create Budget
-POST /budgets
-Request Body
-{
-  "category": "Food",
-  "limit": 10000
-}
-Authentication
+```
 
-Protected routes require a JWT token.
+Import results distinguish imported, skipped, duplicate, and failed messages. Supported transaction patterns and parsing accuracy depend on the SMS wording.
 
-Example:
+The active server does not currently register a health-check endpoint. There is also a `backend/routes` package with a separate router, but `cmd/server/main.go` does not use it.
 
-Authorization: Bearer your_token_here
-Database Schema
-Users Table
-Column	Type
-id	UUID
-name	VARCHAR
-email	VARCHAR
-password	TEXT
-Expenses Table
-Column	Type
-id	UUID
-user_id	UUID
-title	VARCHAR
-amount	FLOAT
-category	VARCHAR
-created_at	TIMESTAMP
-Budgets Table
-Column	Type
-id	UUID
-user_id	UUID
-category	VARCHAR
-limit	FLOAT
-Future Improvements
-Mpesa integration
-Expense charts
-AI financial insights
-Savings goals
-Export reports (PDF/CSV)
-Multi-currency support
-Mobile app support
-Notifications and reminders
-Security
-Passwords hashed using bcrypt
-JWT-based authentication
-Protected API routes
-Input validation
-Example Workflow
-User signs up
-User logs in
-User creates expenses
-User sets budgets
-Dashboard analyzes spending habits
-Contributing
+## Data and security
 
-Contributions are welcome.
-Fork the repository
-Create a feature branch
-Commit your changes
-Push your branch
-Open a Pull Request
+GORM auto-migrates the user, expense, budget, and M-Pesa import tables at startup. Passwords are stored as bcrypt hashes. Expense and budget data are fetched for the authenticated user. The server includes a development JWT secret fallback; configure `JWT_SECRET` to a strong, private value when running outside local development.
 
-Author
-Built with Go to help users develop smarter financial habits and better money management.
+## Checks
+
+Run backend tests:
+
+```sh
+cd backend
+go test ./...
+```
+
+Build the frontend:
+
+```sh
+cd frontend
+npm run build
+```
