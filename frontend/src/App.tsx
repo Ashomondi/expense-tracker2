@@ -142,7 +142,8 @@ export const App: React.FC = () => {
                 onChange={(e) =>
                   setSelectedCurrency(e.target.value as 'KES' | 'USD' | 'EUR' | 'GBP')
                 }
-                className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand"
+                className="currency-select"
+                style={{ colorScheme: 'dark' }}
               >
                 <option value="KES">KES</option>
                 <option value="USD">USD</option>
