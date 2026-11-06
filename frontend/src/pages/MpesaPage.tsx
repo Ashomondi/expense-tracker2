@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Plus } from 'lucide-react';
 import { API_BASE } from '../api';
 
 interface MpesaPageProps {
@@ -53,7 +54,7 @@ const formatDate = (dateStr: string) => {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'imported':
-      return 'bg-[#10B981] text-white';
+      return 'bg-[#3B82F6] text-white';
     case 'skipped':
       return 'bg-amber-500 text-white';
     case 'duplicate':
@@ -79,7 +80,7 @@ const getTypeColor = (type: string) => {
       return 'bg-gray-500/20 text-gray-400';
     case 'received':
     case 'deposit':
-      return 'bg-[#10B981]/20 text-[#10B981]';
+      return 'bg-[#3B82F6]/20 text-[#3B82F6]';
     default:
       return 'bg-gray-500/20 text-gray-400';
   }
@@ -223,72 +224,73 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
 
   if (loading) {
     return (
-      <div className="p-8 max-w-7xl mx-auto text-white">
+      <div className="p-8 max-w-7xl mx-auto text-white font-sans">
         <p className="text-gray-400">Loading M-Pesa integration...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto text-white">
+    <div className="p-8 max-w-7xl mx-auto text-white font-sans">
       <div className="flex justify-between items-center mb-8">
         <div>
           <span className="text-xs uppercase font-semibold tracking-wider text-gray-400">INTEGRATIONS</span>
-          <h1 className="text-4xl font-serif font-bold text-white mt-1">M-Pesa SMS Import</h1>
+          <h1 className="text-4xl font-sans font-bold text-white mt-1">M-Pesa SMS Import</h1>
         </div>
         <button
           onClick={() => setShowImportModal(true)}
-          className="px-5 py-2.5 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#3B82F6] text-white font-semibold rounded-full hover:bg-[#2563EB] transition-colors cursor-pointer shadow-[0_0_24px_rgba(59,130,246,0.3)]"
         >
-          + Import SMS
+          <Plus size={16} strokeWidth={2.5} aria-hidden />
+          Import SMS
         </button>
       </div>
 
       {/* Integration Status Card */}
-      <div className="bg-[#1A1F1C] border border-[#2D3A33] rounded-2xl p-6 shadow-sm mb-8">
+      <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6 shadow-sm mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Integration Status</h2>
-          <span className="px-3 py-1 bg-[#10B981]/20 text-[#10B981] text-xs font-semibold rounded-full">
+          <span className="px-3 py-1 bg-[#3B82F6]/20 text-[#3B82F6] text-xs font-semibold rounded-full">
             Connected
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-[#121715] border border-[#2D3A33] rounded-xl p-4">
+          <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
             <div className="text-xs text-gray-400 mb-1">Imported</div>
-            <div className="text-3xl font-serif font-bold text-[#10B981]">{stats.imported}</div>
+            <div className="text-3xl font-sans font-bold text-[#3B82F6]">{stats.imported}</div>
           </div>
-          <div className="bg-[#121715] border border-[#2D3A33] rounded-xl p-4">
+          <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
             <div className="text-xs text-gray-400 mb-1">Skipped</div>
-            <div className="text-3xl font-serif font-bold text-amber-400">{stats.skipped}</div>
+            <div className="text-3xl font-sans font-bold text-amber-400">{stats.skipped}</div>
           </div>
-          <div className="bg-[#121715] border border-[#2D3A33] rounded-xl p-4">
+          <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
             <div className="text-xs text-gray-400 mb-1">Duplicates</div>
-            <div className="text-3xl font-serif font-bold text-blue-400">{stats.duplicates}</div>
+            <div className="text-3xl font-sans font-bold text-blue-400">{stats.duplicates}</div>
           </div>
-          <div className="bg-[#121715] border border-[#2D3A33] rounded-xl p-4">
+          <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
             <div className="text-xs text-gray-400 mb-1">Failed</div>
-            <div className="text-3xl font-serif font-bold text-red-400">{stats.failed}</div>
+            <div className="text-3xl font-sans font-bold text-red-400">{stats.failed}</div>
           </div>
         </div>
 
-        <div className="bg-[#121715] border border-[#2D3A33] rounded-xl p-4">
+        <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-xl p-4">
           <h3 className="font-semibold text-white mb-3">How to Import M-Pesa SMS</h3>
           <div className="space-y-2 text-sm text-gray-300">
             <p className="flex items-center gap-2">
-              <span className="w-5 h-5 bg-[#10B981]/20 text-[#10B981] rounded-full flex items-center justify-center text-xs">1</span>
+              <span className="w-5 h-5 bg-[#3B82F6]/20 text-[#3B82F6] rounded-full flex items-center justify-center text-xs">1</span>
               Open the M-Pesa SMS in your messaging app
             </p>
             <p className="flex items-center gap-2">
-              <span className="w-5 h-5 bg-[#10B981]/20 text-[#10B981] rounded-full flex items-center justify-center text-xs">2</span>
+              <span className="w-5 h-5 bg-[#3B82F6]/20 text-[#3B82F6] rounded-full flex items-center justify-center text-xs">2</span>
               Long-press the message → Copy text
             </p>
             <p className="flex items-center gap-2">
-              <span className="w-5 h-5 bg-[#10B981]/20 text-[#10B981] rounded-full flex items-center justify-center text-xs">3</span>
+              <span className="w-5 h-5 bg-[#3B82F6]/20 text-[#3B82F6] rounded-full flex items-center justify-center text-xs">3</span>
               Paste into the import box below (one SMS per line)
             </p>
             <p className="flex items-center gap-2">
-              <span className="w-5 h-5 bg-[#10B981]/20 text-[#10B981] rounded-full flex items-center justify-center text-xs">4</span>
+              <span className="w-5 h-5 bg-[#3B82F6]/20 text-[#3B82F6] rounded-full flex items-center justify-center text-xs">4</span>
               Click Import — we'll parse and categorize automatically
             </p>
           </div>
@@ -296,8 +298,8 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
       </div>
 
       {/* Recent Import Activity */}
-      <div className="bg-[#1A1F1C] border border-[#2D3A33] rounded-2xl overflow-hidden">
-        <div className="p-6 border-b border-[#2D3A33]">
+      <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-2xl overflow-hidden">
+        <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
           <h2 className="text-xl font-bold text-white">Import History</h2>
         </div>
 
@@ -309,7 +311,7 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#121715] text-gray-400">
+              <thead className="bg-[#14141A] text-gray-400">
                 <tr>
                   <th className="p-3 font-semibold">Date & Time</th>
                   <th className="p-3 font-semibold">Reference</th>
@@ -322,7 +324,7 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
               </thead>
               <tbody>
                 {imports.map((imp) => (
-                  <tr key={imp.id} className="border-t border-[#2D3A33] hover:bg-[#121715]">
+                  <tr key={imp.id} className="border-t border-[rgba(255,255,255,0.1)] hover:bg-[#14141A]">
                     <td className="p-3 text-gray-300">{formatDate(imp.transaction_date)}</td>
                     <td className="p-3 font-mono text-xs text-white">{imp.transaction_ref || imp.fingerprint.slice(0, 12)}</td>
                     <td className="p-3">
@@ -345,7 +347,7 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
                       {imp.status === 'imported' && !imp.expense_id && (
                         <button
                           onClick={() => handleCreateExpense(imp.id)}
-                          className="px-3 py-1 bg-[#10B981] text-white text-xs font-semibold rounded-lg hover:bg-[#059669] transition-colors"
+                          className="px-3 py-1 bg-[#3B82F6] text-white text-xs font-semibold rounded-lg hover:bg-[#2563EB] transition-colors"
                         >
                           Create Expense
                         </button>
@@ -375,7 +377,7 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
       {/* Import SMS Modal */}
       {showImportModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1A1F1C] border border-[#2D3A33] rounded-2xl p-6 w-full max-w-2xl text-white max-h-[80vh] overflow-hidden">
+          <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6 w-full max-w-2xl text-white max-h-[80vh] overflow-hidden">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold">Import M-Pesa SMS</h3>
               <button
@@ -400,12 +402,12 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
                     "KSh500.00 paid to KENYA POWER paybill 888888 on 21/10/23. Ref: GHI789RST. Fee: KSh0.00. Balance: KSh6,500.00",
                   ].join('\n\n')}
                   rows={8}
-                  className="w-full bg-[#121715] border border-[#3D4A43] rounded-lg p-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#10B981] resize-y"
+                  className="w-full bg-[#14141A] border border-[rgba(255,255,255,0.12)] rounded-lg p-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
                 />
               </div>
 
               {importResult && (
-                <div className="bg-[#121715] border border-[#2D3A33] rounded-lg p-4 space-y-2">
+                <div className="bg-[#14141A] border border-[rgba(255,255,255,0.1)] rounded-lg p-4 space-y-2">
                   <div className="flex justify-between items-center">
                     <h4 className="font-semibold text-white">Import Result</h4>
                     <button
@@ -417,8 +419,8 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
                     </button>
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-center">
-                    <div className="bg-[#10B981]/20 p-2 rounded-lg">
-                      <div className="text-2xl font-bold text-[#10B981]">{importResult.imported}</div>
+                    <div className="bg-[#3B82F6]/20 p-2 rounded-lg">
+                      <div className="text-2xl font-bold text-[#3B82F6]">{importResult.imported}</div>
                       <div className="text-xs text-gray-400">Imported</div>
                     </div>
                     <div className="bg-amber-500/20 p-2 rounded-lg">
@@ -439,7 +441,7 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
                       {importResult.details.map((detail, idx) => (
                         <div key={idx} className="text-xs text-gray-300 flex justify-between gap-2">
                           <span>{detail.transaction_ref || detail.transaction_type}</span>
-                          <span className={`font-semibold ${detail.status === 'imported' ? 'text-[#10B981]' : detail.status === 'failed' ? 'text-red-400' : 'text-amber-400'}`}>
+                          <span className={`font-semibold ${detail.status === 'imported' ? 'text-[#3B82F6]' : detail.status === 'failed' ? 'text-red-400' : 'text-amber-400'}`}>
                             {detail.status}
                           </span>
                           {detail.error_message && <span className="text-red-400">{detail.error_message}</span>}
@@ -450,18 +452,18 @@ export const MpesaPage: React.FC<MpesaPageProps> = ({ selectedCurrency: _selecte
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#2D3A33]">
+              <div className="flex justify-end gap-3 pt-4 border-t border-[rgba(255,255,255,0.1)]">
                 <button
                   type="button"
                   onClick={() => { setShowImportModal(false); setImportResult(null); }}
-                  className="px-4 py-2 bg-[#2D3A33] text-gray-300 rounded-lg hover:bg-[#3D4A43] transition-colors"
+                  className="px-4 py-2 bg-[rgba(255,255,255,0.1)] text-gray-300 rounded-lg hover:bg-[rgba(255,255,255,0.12)] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={importing || !smsInput.trim()}
-                  className="px-5 py-2 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] transition-colors disabled:opacity-50"
+                  className="px-5 py-2 bg-[#3B82F6] text-white font-semibold rounded-lg hover:bg-[#2563EB] transition-colors disabled:opacity-50"
                 >
                   {importing ? 'Importing...' : 'Import SMS'}
                 </button>

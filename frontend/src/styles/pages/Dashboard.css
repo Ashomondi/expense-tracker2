@@ -4,9 +4,10 @@
   padding: 2rem;
   max-width: 80rem;
   margin: 0 auto;
-  color: #f3f6f4;
-  background-color: #0e1310;
+  color: #FFFFFF;
+  background-color: transparent;
   min-height: 100vh;
+  font-family: var(--font-sans);
 }
 
 .dashboard-header {
@@ -28,33 +29,39 @@
 .dashboard-title {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #f3f6f4;
+  color: #FFFFFF;
   margin-top: 0.25rem;
-  font-family: Georgia, serif;
+  font-family: var(--font-sans);
 }
 
 .dashboard-add-btn {
-  padding: 0.625rem 1.25rem;
-  background-color: #10b981;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.25rem;
+  background-color: #3B82F6;
   color: white;
-  font-weight: 600;
-  border-radius: 0.5rem;
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: 9999px;
   cursor: pointer;
   border: none;
-  transition: background-color 0.3s ease;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.3);
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .dashboard-add-btn:hover {
-  background-color: #059669;
+  background-color: #2563EB;
+  transform: translateY(-1px);
 }
 
 .dashboard-quick-entry {
   margin-bottom: 1.5rem;
-  background-color: #1a1f1c;
-  border-radius: 0.75rem;
-  border: 1px solid #2d3a33;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255,255,255,0.1);
   padding: 1rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
 }
 
 .dashboard-quick-form {
@@ -65,17 +72,17 @@
 .dashboard-quick-input {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #3d4a43;
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   outline: none;
-  background-color: #121715;
-  color: #f3f6f4;
+  background-color: #14141A;
+  color: #FFFFFF;
 }
 
 .dashboard-quick-input:focus {
-  outline: 2px solid #10b981;
-  border-color: #10b981;
+  outline: 2px solid #3B82F6;
+  border-color: #3B82F6;
 }
 
 .dashboard-quick-input::placeholder {
@@ -83,19 +90,20 @@
 }
 
 .dashboard-quick-btn {
-  padding: 0.5rem 1rem;
-  background-color: #10b981;
+  padding: 0.55rem 1.1rem;
+  background-color: #3B82F6;
   color: white;
-  font-weight: 600;
-  border-radius: 0.5rem;
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: 9999px;
   cursor: pointer;
   border: none;
   font-size: 0.875rem;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 .dashboard-quick-btn:hover {
-  background-color: #059669;
+  background-color: #2563EB;
 }
 
 .dashboard-metrics-grid {
@@ -106,14 +114,20 @@
 }
 
 .dashboard-metric-card {
-  background-color: #1a1f1c;
-  border-radius: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 1.25rem;
   padding: 1.25rem;
-  border: 1px solid #2d3a33;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
 .metric-header {
@@ -132,8 +146,8 @@
   width: 2rem;
   height: 2rem;
   border-radius: 0.5rem;
-  background-color: #0f2d1f;
-  color: #10b981;
+  background-color: rgba(59,130,246,0.15);
+  color: #3B82F6;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,13 +162,13 @@
 .metric-value {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #f3f6f4;
-  font-family: Georgia, serif;
+  color: #FFFFFF;
+  font-family: var(--font-sans);
 }
 
 .metric-change {
   font-size: 0.75rem;
-  color: #10b981;
+  color: #3B82F6;
   font-weight: 600;
   margin-top: 0.25rem;
   display: flex;
@@ -176,11 +190,11 @@
 }
 
 .dashboard-chart-container {
-  background-color: #1a1f1c;
-  border-radius: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 1.25rem;
   padding: 1.5rem;
-  border: 1px solid #2d3a33;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
 }
 
 .chart-header {
@@ -192,7 +206,7 @@
 
 .chart-title {
   font-weight: 700;
-  color: #f3f6f4;
+  color: #FFFFFF;
 }
 
 .chart-subtitle {
@@ -203,8 +217,8 @@
 .chart-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #10b981;
-  background-color: #0f2d1f;
+  color: #3B82F6;
+  background-color: rgba(59,130,246,0.15);
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
 }
@@ -231,16 +245,16 @@
 }
 
 .dashboard-budget-overview {
-  background-color: #1a1f1c;
-  border-radius: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 1.25rem;
   padding: 1.5rem;
-  border: 1px solid #2d3a33;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
 }
 
 .budget-title {
   font-weight: 700;
-  color: #f3f6f4;
+  color: #FFFFFF;
   margin-bottom: 1.5rem;
 }
 
@@ -264,7 +278,7 @@
 }
 
 .budget-name {
-  color: #f3f6f4;
+  color: #FFFFFF;
   font-weight: 600;
 }
 
@@ -275,7 +289,7 @@
 
 .budget-bar-wrapper {
   width: 100%;
-  background-color: #2d3a33;
+  background-color: rgba(255,255,255,0.1);
   height: 0.5rem;
   border-radius: 9999px;
   overflow: hidden;
@@ -294,10 +308,10 @@
 }
 
 .dashboard-transactions {
-  background-color: #1a1f1c;
-  border-radius: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 1.25rem;
   padding: 1.5rem;
-  border: 1px solid #2d3a33;
+  border: 1px solid rgba(255,255,255,0.1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
@@ -310,13 +324,13 @@
 
 .transactions-title {
   font-weight: 700;
-  color: #f3f6f4;
+  color: #FFFFFF;
 }
 
 .view-all-btn {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #10b981;
+  color: #3B82F6;
   background: none;
   border: none;
   cursor: pointer;
@@ -324,7 +338,7 @@
 }
 
 .view-all-btn:hover {
-  color: #34d399;
+  color: #93C5FD;
 }
 
 .transactions-loading,
@@ -338,7 +352,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-top: 1px solid #2d3a33;
+  border-top: 1px solid rgba(255,255,255,0.1);
 }
 
 .transaction-item {
@@ -346,7 +360,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #2d3a33;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .transaction-item:last-child {
@@ -376,7 +390,7 @@
 
 .transaction-title {
   font-weight: 600;
-  color: #f3f6f4;
+  color: #FFFFFF;
   font-size: 0.875rem;
 }
 
@@ -401,7 +415,7 @@
 
 .transaction-amount {
   font-weight: 700;
-  color: #f3f6f4;
+  color: #FFFFFF;
   font-size: 0.875rem;
 }
 
@@ -419,14 +433,14 @@
 }
 
 .dashboard-modal {
-  background-color: #1a1f1c;
+  background-color: #14141A;
   border-radius: 1rem;
   padding: 1.5rem;
   width: 100%;
   max-width: 28rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  color: #f3f6f4;
-  border: 1px solid #2d3a33;
+  color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .modal-header {
@@ -439,7 +453,7 @@
 .modal-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #f3f6f4;
+  color: #FFFFFF;
 }
 
 .modal-close-btn {
@@ -452,7 +466,7 @@
 }
 
 .modal-close-btn:hover {
-  color: #f3f6f4;
+  color: #FFFFFF;
 }
 
 .modal-error {
@@ -487,17 +501,17 @@
 
 .form-input {
   padding: 0.625rem;
-  background-color: #121715;
-  border: 1px solid #3d4a43;
+  background-color: #14141A;
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  color: #f3f6f4;
+  color: #FFFFFF;
   outline: none;
 }
 
 .form-input:focus {
-  outline: 2px solid #10b981;
-  border-color: #10b981;
+  outline: 2px solid #3B82F6;
+  border-color: #3B82F6;
 }
 
 .form-input::placeholder {
@@ -509,40 +523,40 @@
   justify-content: flex-end;
   gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid #2d3a33;
+  border-top: 1px solid rgba(255,255,255,0.1);
 }
 
 .modal-cancel-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid #3d4a43;
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: #9ca3af;
-  background-color: #1a1f1c;
+  background-color: #14141A;
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .modal-cancel-btn:hover {
-  background-color: #222825;
-  border-color: #4d5a53;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .modal-submit-btn {
-  padding: 0.5rem 1.25rem;
-  background-color: #10b981;
+  padding: 0.55rem 1.25rem;
+  background-color: #3B82F6;
   color: white;
-  font-weight: 600;
-  border-radius: 0.5rem;
+  font-weight: 700;
+  border-radius: 9999px;
   font-size: 0.875rem;
   border: none;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 .modal-submit-btn:hover {
-  background-color: #059669;
+  background-color: #2563EB;
 }
 
 .modal-submit-btn:disabled {

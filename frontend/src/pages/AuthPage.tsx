@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ArrowLeft, Check, Circle, Eye, EyeOff } from 'lucide-react';
 import { API_BASE } from '../api';
 import '../styles/pages/AuthPage.css';
 
@@ -16,7 +17,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 🔒 Password requirement checks
   const passwordRules = {
     length: password.length >= 8,
     letter: /[a-zA-Z]/.test(password),
@@ -30,7 +30,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
     e.preventDefault();
     setError('');
 
-    // Pre-flight check during signup
     if (mode === 'signup' && !isPasswordValid) {
       setError('Please fulfill all password requirements before creating your account.');
       return;
@@ -39,9 +38,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
     setLoading(true);
 
     const endpoint = mode === 'signup' ? '/api/signup' : '/api/login';
-    const payload = mode === 'signup' 
-      ? { full_name: fullName, email, password }
-      : { email, password };
+    const payload =
+      mode === 'signup' ? { full_name: fullName, email, password } : { email, password };
 
     try {
       const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -58,10 +56,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
       }
 
       if (mode === 'signup') {
-        // Automatically switch to login after successful registration
         onNavigate('login');
       } else {
-        // Login successful
         onSuccess(data.user);
       }
     } catch (err: any) {
@@ -73,16 +69,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
 
   return (
     <div className="auth-container">
-      {/* --- Left Column: Testimonial & Social Proof --- */}
+      <div className="ambient-glow auth-glow-blue" aria-hidden />
+      <div className="ambient-glow auth-glow-amber" aria-hidden />
+
       <div className="auth-left">
-        <div>
-          <button 
-            onClick={() => onNavigate('home')} 
-            className="auth-logo"
-          >
-            Spendly
-          </button>
-        </div>
+        <button onClick={() => onNavigate('home')} className="logo-mark auth-logo" type="button">
+          <span className="logo-mark-circles" aria-hidden>
+            <span />
+            <span />
+          </span>
+          <span className="logo-mark-text">Spendly</span>
+        </button>
 
         <div className="auth-testimonial">
           <span className="testimonial-badge">User Story</span>
@@ -92,49 +89,43 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
           <p className="testimonial-author">Ashley M., Early User</p>
         </div>
 
-        {/* 4 Stat Cards */}
         <div className="auth-stats-grid">
-          <div className="auth-stat-card">
+          <div className="auth-stat-card grain">
             <div className="stat-value">$2,450</div>
             <div className="stat-label">Avg monthly tracked</div>
           </div>
-          <div className="auth-stat-card">
+          <div className="auth-stat-card grain">
             <div className="stat-value">94%</div>
             <div className="stat-label">Stay on budget</div>
           </div>
-          <div className="auth-stat-card">
+          <div className="auth-stat-card grain">
             <div className="stat-value">3 min</div>
             <div className="stat-label">Setup time</div>
           </div>
-          <div className="auth-stat-card">
+          <div className="auth-stat-card grain">
             <div className="stat-value">10k+</div>
             <div className="stat-label">Happy users</div>
           </div>
         </div>
       </div>
 
-      {/* --- Right Column: Auth Form --- */}
       <div className="auth-right">
         <div className="auth-form-wrapper">
-          <button 
-            onClick={() => onNavigate('home')}
-            className="auth-back-btn"
-          >
-            &larr; Back to home
+          <button onClick={() => onNavigate('home')} className="auth-back-btn" type="button">
+            <ArrowLeft size={16} strokeWidth={2.25} aria-hidden />
+            Back to home
           </button>
 
           <h1 className="auth-form-title">
             {mode === 'signup' ? 'Get started' : 'Welcome back'}
           </h1>
           <p className="auth-form-subtitle">
-            {mode === 'signup' ? 'Create your free account today' : 'Sign in to your Spendly account'}
+            {mode === 'signup'
+              ? 'Create your free account today'
+              : 'Sign in to your Spendly account'}
           </p>
 
-          {error && (
-            <div className="auth-error">
-              {error}
-            </div>
-          )}
+          {error && <div className="auth-error">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form">
             {mode === 'signup' && (
@@ -178,25 +169,49 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="auth-password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? (
+                    <EyeOff size={18} strokeWidth={2} />
+                  ) : (
+                    <Eye size={18} strokeWidth={2} />
+                  )}
                 </button>
               </div>
 
-              {/* Live Password Hints (Signup only) */}
               {mode === 'signup' && password.length > 0 && (
                 <div className="auth-password-rules">
                   <span className={passwordRules.length ? 'rule-met' : 'rule-unmet'}>
-                    {passwordRules.length ? '✓' : '○'} Min 8 characters
+                    {passwordRules.length ? (
+                      <Check size={14} strokeWidth={2.5} aria-hidden />
+                    ) : (
+                      <Circle size={14} strokeWidth={2} aria-hidden />
+                    )}
+                    Min 8 characters
                   </span>
                   <span className={passwordRules.letter ? 'rule-met' : 'rule-unmet'}>
-                    {passwordRules.letter ? '✓' : '○'} At least 1 letter
+                    {passwordRules.letter ? (
+                      <Check size={14} strokeWidth={2.5} aria-hidden />
+                    ) : (
+                      <Circle size={14} strokeWidth={2} aria-hidden />
+                    )}
+                    At least 1 letter
                   </span>
                   <span className={passwordRules.number ? 'rule-met' : 'rule-unmet'}>
-                    {passwordRules.number ? '✓' : '○'} At least 1 number
+                    {passwordRules.number ? (
+                      <Check size={14} strokeWidth={2.5} aria-hidden />
+                    ) : (
+                      <Circle size={14} strokeWidth={2} aria-hidden />
+                    )}
+                    At least 1 number
                   </span>
                   <span className={passwordRules.special ? 'rule-met' : 'rule-unmet'}>
-                    {passwordRules.special ? '✓' : '○'} Special character (!@#$)
+                    {passwordRules.special ? (
+                      <Check size={14} strokeWidth={2.5} aria-hidden />
+                    ) : (
+                      <Circle size={14} strokeWidth={2} aria-hidden />
+                    )}
+                    Special character (!@#$)
                   </span>
                 </div>
               )}
@@ -215,14 +230,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode, onNavigate, onSuccess 
             {mode === 'signup' ? (
               <>
                 Already have an account?{' '}
-                <button onClick={() => onNavigate('login')} className="auth-toggle-link">
+                <button onClick={() => onNavigate('login')} className="auth-toggle-link" type="button">
                   Sign in
                 </button>
               </>
             ) : (
               <>
                 Don't have an account?{' '}
-                <button onClick={() => onNavigate('signup')} className="auth-toggle-link">
+                <button onClick={() => onNavigate('signup')} className="auth-toggle-link" type="button">
                   Sign up
                 </button>
               </>

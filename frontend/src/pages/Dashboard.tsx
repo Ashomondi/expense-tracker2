@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Activity,
+  HeartPulse,
+  Plus,
+  Receipt,
+  Target,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
 import { API_BASE } from '../api';
 import '../styles/pages/Dashboard.css';
 
@@ -17,6 +26,12 @@ interface Expense {
   date: string;
 }
 
+interface Budget {
+  id: number;
+  category: string;
+  amount: number;
+}
+
 interface DashboardProps {
   user: User;
   onLogout?: () => void;
@@ -24,15 +39,15 @@ interface DashboardProps {
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; dot: string; text: string; bar: string }> = {
-  'Food & Drink': { bg: 'bg-amber-100', dot: 'bg-amber-500', text: 'text-amber-800', bar: 'bg-amber-500' },
-  'Transport': { bg: 'bg-blue-100', dot: 'bg-blue-500', text: 'text-blue-800', bar: 'bg-blue-500' },
-  'Entertainment': { bg: 'bg-purple-100', dot: 'bg-purple-500', text: 'text-purple-800', bar: 'bg-purple-500' },
-  'Utilities': { bg: 'bg-cyan-100', dot: 'bg-cyan-500', text: 'text-cyan-800', bar: 'bg-cyan-500' },
-  'Health': { bg: 'bg-rose-100', dot: 'bg-rose-500', text: 'text-rose-800', bar: 'bg-rose-500' },
-  'Shopping': { bg: 'bg-amber-100', dot: 'bg-amber-500', text: 'text-amber-800', bar: 'bg-amber-500' },
+  'Food & Drink': { bg: 'bg-amber-500/15', dot: 'bg-amber-400', text: 'text-amber-300', bar: 'bg-amber-400' },
+  'Transport': { bg: 'bg-blue-500/15', dot: 'bg-blue-400', text: 'text-blue-300', bar: 'bg-blue-400' },
+  'Entertainment': { bg: 'bg-violet-500/15', dot: 'bg-violet-400', text: 'text-violet-300', bar: 'bg-violet-400' },
+  'Utilities': { bg: 'bg-cyan-500/15', dot: 'bg-cyan-400', text: 'text-cyan-300', bar: 'bg-cyan-400' },
+  'Health': { bg: 'bg-rose-500/15', dot: 'bg-rose-400', text: 'text-rose-300', bar: 'bg-rose-400' },
+  'Shopping': { bg: 'bg-orange-500/15', dot: 'bg-orange-400', text: 'text-orange-300', bar: 'bg-orange-400' },
 };
 
-const DEFAULT_COLOR = { bg: 'bg-gray-100', dot: 'bg-gray-500', text: 'text-gray-800', bar: 'bg-gray-500' };
+const DEFAULT_COLOR = { bg: 'bg-white/10', dot: 'bg-gray-400', text: 'text-gray-300', bar: 'bg-gray-400' };
 
 const CURRENCY_OPTIONS = [
   { code: 'KES', label: 'Kenyan Shilling', symbol: 'KSh' },
@@ -176,6 +191,7 @@ const parseQuickExpense = (input: string) => {
 
 export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = 'KES' }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -279,15 +295,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     }
   };
 
-  const totalSpent = expenses.reduce((sum, item) => {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const currentMonthExpenses = expenses.filter((item) => {
+    const date = new Date(item.date);
+    return date >= monthStart && date <= now;
+  });
+  const totalSpent = currentMonthExpenses.reduce((sum, item) => {
     const sourceCurrency = item.currency || 'KES';
     return sum + convertCurrencyAmount(item.amount, sourceCurrency, displayCurrency);
   }, 0);
 
-  const totalBudget = 1900;
-  const budgetUsedPct = Math.min(Math.round((totalSpent / totalBudget) * 100), 100);
-  const budgetRemaining = Math.max(totalBudget - totalSpent, 0);
-  const budgetHealthPct = 100 - budgetUsedPct;
+  const totalBudget = budgets.reduce(
+    (sum, budget) => sum + convertCurrencyAmount(budget.amount, 'KES', displayCurrency),
+    0,
+  );
+  const budgetUsedPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  const budgetRemaining = totalBudget - totalSpent;
+  const budgetHealthPct = totalBudget > 0 ? Math.max(0, 100 - budgetUsedPct) : 0;
 
   const formattedMonth = new Intl.DateTimeFormat('en-KE', {
     month: 'long',
@@ -311,22 +336,62 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     }
   };
 
+  const fetchBudgets = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/budgets`, { credentials: 'include' });
+      if (res.ok) setBudgets((await res.json()) || []);
+    } catch (err) {
+      console.error('Failed to fetch budgets:', err);
+    }
+  };
+
   useEffect(() => {
     fetchExpenses();
+    fetchBudgets();
   }, []);
 
-  const budgetCategories = [
-    { name: 'Food & Drink', spent: 110, total: 800, pct: 14 },
-    { name: 'Transport', spent: 57, total: 200, pct: 29 },
-    { name: 'Entertainment', spent: 26, total: 150, pct: 17 },
-    { name: 'Utilities', spent: 121, total: 300, pct: 40 },
-    { name: 'Health', spent: 73, total: 200, pct: 36 },
-    { name: 'Shopping', spent: 35, total: 250, pct: 14 },
-  ].map((category) => ({
-    ...category,
-    spent: convertCurrencyAmount(category.spent, 'KES', displayCurrency),
-    total: convertCurrencyAmount(category.total, 'KES', displayCurrency),
+  const budgetCategories = budgets.map((budget) => {
+    const spent = currentMonthExpenses
+      .filter((expense) => expense.category === budget.category)
+      .reduce(
+        (sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency),
+        0,
+      );
+    const total = convertCurrencyAmount(budget.amount, 'KES', displayCurrency);
+    return { name: budget.category, spent, total, pct: total > 0 ? Math.round((spent / total) * 100) : 0 };
+  });
+
+  const monthlySpending = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
+    const monthExpenses = expenses.filter((expense) => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getFullYear() === date.getFullYear() && expenseDate.getMonth() === date.getMonth();
+    });
+    return {
+      label: new Intl.DateTimeFormat('en-KE', { month: 'short', timeZone: 'Africa/Nairobi' }).format(date),
+      total: monthExpenses.reduce(
+        (sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency),
+        0,
+      ),
+    };
+  });
+  const maxMonthlySpending = Math.max(...monthlySpending.map((month) => month.total), 0);
+  const chartPoints = monthlySpending.map((month, index) => ({
+    x: 20 + (460 * index) / (monthlySpending.length - 1),
+    y: maxMonthlySpending > 0 ? 170 - (month.total / maxMonthlySpending) * 140 : 170,
   }));
+  const chartLine = chartPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+  const chartArea = `${chartLine} L ${chartPoints[chartPoints.length - 1].x} 190 L ${chartPoints[0].x} 190 Z`;
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousMonthTotal = expenses
+    .filter((expense) => {
+      const date = new Date(expense.date);
+      return date.getFullYear() === previousMonth.getFullYear() && date.getMonth() === previousMonth.getMonth();
+    })
+    .reduce((sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency), 0);
+  const spendingChange = previousMonthTotal > 0
+    ? Math.round(((totalSpent - previousMonthTotal) / previousMonthTotal) * 100)
+    : null;
 
   const currentDateLabel = formattedMonth.toUpperCase();
 
@@ -344,7 +409,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           onClick={() => setIsAddModalOpen(true)}
           className="dashboard-add-btn"
         >
-          + Add Expense
+          <Plus size={16} strokeWidth={2.5} aria-hidden />
+          Add Expense
         </button>
       </div>
 
@@ -372,14 +438,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Total Spent</span>
-            <div className="metric-icon"></div>
+            <div className="metric-icon">
+              <Wallet size={16} strokeWidth={2.2} aria-hidden />
+            </div>
           </div>
           <div className="metric-content">
             <div className="metric-value">
               {formatCurrency(totalSpent, newCurrency)}
             </div>
             <div className="metric-change">
-              ↗ +12% vs last month
+              <TrendingUp size={12} strokeWidth={2.5} aria-hidden />
+              {spendingChange === null ? 'No previous month data' : `${spendingChange > 0 ? '+' : ''}${spendingChange}% vs last month`}
             </div>
           </div>
         </div>
@@ -388,12 +457,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Budget Used</span>
-            <div className="metric-icon"></div>
+            <div className="metric-icon">
+              <Target size={16} strokeWidth={2.2} aria-hidden />
+            </div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{budgetUsedPct}%</div>
             <div className="metric-change">
-              ↗ {formatCurrency(budgetRemaining, newCurrency)} remaining
+              <Activity size={12} strokeWidth={2.5} aria-hidden />
+              {totalBudget > 0 ? `${formatCurrency(budgetRemaining, newCurrency)} ${budgetRemaining >= 0 ? 'remaining' : 'over budget'}` : 'Set budgets to track spending'}
             </div>
           </div>
         </div>
@@ -402,12 +474,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Transactions</span>
-            <div className="metric-icon"></div>
+            <div className="metric-icon">
+              <Receipt size={16} strokeWidth={2.2} aria-hidden />
+            </div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{expenses.length}</div>
             <div className="metric-change">
-              ↗ +3 this week
+              <TrendingUp size={12} strokeWidth={2.5} aria-hidden />
+              {currentMonthExpenses.length} this month
             </div>
           </div>
         </div>
@@ -416,12 +491,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
         <div className="dashboard-metric-card">
           <div className="metric-header">
             <span className="metric-label">Budget Health</span>
-            <div className="metric-icon"></div>
+            <div className="metric-icon">
+              <HeartPulse size={16} strokeWidth={2.2} aria-hidden />
+            </div>
           </div>
           <div className="metric-content">
             <div className="metric-value">{budgetHealthPct}%</div>
             <div className="metric-change">
-              ↗ On track
+              <Activity size={12} strokeWidth={2.5} aria-hidden />
+              {totalBudget === 0 ? 'No budgets set' : budgetUsedPct >= 100 ? 'Over budget' : 'On track'}
             </div>
           </div>
         </div>
@@ -436,7 +514,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
               <h3 className="chart-title">Monthly Spending</h3>
               <p className="chart-subtitle">Last 6 months</p>
             </div>
-            <span className="chart-badge">May – Oct</span>
+            <span className="chart-badge">{monthlySpending[0].label} – {monthlySpending[5].label}</span>
           </div>
 
           {/* SVG Line Chart Representation */}
@@ -444,8 +522,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
             <svg className="chart-svg" viewBox="0 0 500 200">
               <defs>
                 <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
               {/* Grid Lines */}
@@ -455,34 +533,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
 
               {/* Area Under Curve */}
               <path
-                d="M 20 80 Q 100 30 180 85 T 340 30 T 480 150 L 480 190 L 20 190 Z"
+                d={chartArea}
                 fill="url(#gradient)"
               />
               {/* Smooth Curve */}
               <path
-                d="M 20 80 Q 100 30 180 85 T 340 30 T 480 150"
+                d={chartLine}
                 fill="none"
-                stroke="#10B981"
+                stroke="#3B82F6"
                 strokeWidth="3"
               />
 
               {/* Data Points */}
-              <circle cx="20" cy="80" r="4" fill="#10B981" />
-              <circle cx="110" cy="50" r="4" fill="#10B981" />
-              <circle cx="200" cy="85" r="4" fill="#10B981" />
-              <circle cx="290" cy="30" r="4" fill="#10B981" />
-              <circle cx="380" cy="60" r="4" fill="#10B981" />
-              <circle cx="480" cy="150" r="4" fill="#10B981" />
+              {chartPoints.map((point, index) => <circle key={monthlySpending[index].label} cx={point.x} cy={point.y} r="4" fill="#3B82F6" />)}
             </svg>
 
             {/* X-Axis Labels */}
             <div className="chart-labels">
-              <span>May</span>
-              <span>Jun</span>
-              <span>Jul</span>
-              <span>Aug</span>
-              <span>Sep</span>
-              <span>Oct</span>
+              {monthlySpending.map((month, index) => <span key={`${month.label}-${index}`}>{month.label}</span>)}
             </div>
           </div>
         </div>
@@ -502,7 +570,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
                   <div className="budget-bar-wrapper">
                     <div
                       className={`budget-bar ${color.bar}`}
-                      style={{ width: `${cat.pct}%` }}
+                      style={{ width: `${Math.min(cat.pct, 100)}%` }}
                     />
                   </div>
                   <div className="budget-range">
@@ -552,7 +620,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
                     </div>
                   </div>
                   <div className="transaction-amount">
-                    -{formatCurrency(item.amount, newCurrency)}
+                    -{formatCurrency(convertCurrencyAmount(item.amount, item.currency || 'KES', newCurrency), newCurrency)}
                   </div>
                 </div>
               );
