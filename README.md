@@ -86,6 +86,7 @@ The active server is `backend/cmd/server/main.go` and uses Go's standard `net/ht
 
 | Method | Path | Purpose |
 | --- | --- | --- |
+| `GET` | `/health` | Health check used by Docker Compose |
 | `POST` | `/api/signup` | Create an account (`full_name`, `email`, `password`) |
 | `POST` | `/api/login` | Sign in (`email`, `password`) and set session cookie |
 | `GET` | `/api/me` | Return the current session user |
@@ -126,7 +127,7 @@ For SMS import, send one raw message per transaction:
 
 Import results distinguish imported, skipped, duplicate, and failed messages. Supported transaction patterns and parsing accuracy depend on the SMS wording.
 
-The active server does not currently register a health-check endpoint. There is also a `backend/routes` package with a separate router, but `cmd/server/main.go` does not use it.
+There is also a `backend/routes` package with a separate router, but `cmd/server/main.go` uses its own route setup.
 
 ## Data and security
 
