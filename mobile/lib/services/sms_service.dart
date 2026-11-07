@@ -47,22 +47,24 @@ class SmsService {
     }
   }
 
-  Future<List<RawSmsMessage>> readMpesaInbox({int limit = 100}) async {
+  Future<List<RawSmsMessage>> readMpesaInbox({int limit = 100, bool fallbackToSimulated = false}) async {
     try {
       final List<dynamic>? rawList = await _channel.invokeMethod<List<dynamic>>(
         'readMpesaSms',
         {'limit': limit},
       );
 
-      if (rawList != null && rawList.isNotEmpty) {
+      if (rawList != null) {
         return rawList.map((item) => RawSmsMessage.fromMap(item as Map<dynamic, dynamic>)).toList();
       }
     } on PlatformException catch (e) {
       debugPrint('Platform error reading SMS: ${e.message}');
     }
 
-    // Fallback simulation when running on emulators without a physical SIM card
-    return getSimulatedMpesaMessages();
+    if (fallbackToSimulated) {
+      return getSimulatedMpesaMessages();
+    }
+    return [];
   }
 
   List<RawSmsMessage> getSimulatedMpesaMessages() {

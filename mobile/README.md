@@ -74,6 +74,19 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 ---
 
-## Server Connection
-By default, the companion app connects to `http://10.0.2.2:8080` (for Android emulators).
-To connect to a physical device on your local Wi-Fi, tap the **Settings icon (⚙️)** in the top right of the dashboard and enter your host machine's IP (e.g. `http://192.168.1.100:8080`).
+## Server Connection & Syncing
+
+Spendly Companion operates in two flexible modes:
+1. **Offline / Standalone Mode**:
+   - M-Pesa SMS messages are automatically scanned, parsed, and stored directly on your phone's storage using the high-performance local parser.
+   - All transaction totals, counterparties, reference codes, and balances are visible on the dashboard without requiring an active internet connection or backend server.
+2. **Connected & Synchronized Mode**:
+   - To sync your transactions with the Spendly Web Dashboard, tap the **Settings icon (⚙️)** in the top right.
+   - Tap **"PC Wi-Fi (192.168.89.246)"** or enter your computer's local IP address (e.g. `http://192.168.89.246:8080`).
+   - Tap **"Test Connection"** to verify communication with the Spendly API.
+   - Enter your Spendly email and password to log in.
+   - Once logged in, tapping **"Scan & Sync M-Pesa SMS"** uploads your transactions to the Go backend (`POST /api/integrations/mpesa/import`) with SHA-256 deduplication and updates badges to *Synced*.
+
+### Testing Without Active M-Pesa Messages
+If you are testing on an Android emulator or a test device without M-Pesa SMS:
+- Tap **"Load Sample M-Pesa SMS"** on the empty state screen or in the **Settings (⚙️)** menu to test parsing and syncing with realistic Safaricom transactions.

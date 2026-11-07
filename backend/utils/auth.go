@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"backend/models"
@@ -23,16 +25,30 @@ func GenerateJWT(userID uint, secret string, expiration time.Duration) (string, 
 	return token.SignedString([]byte(secret))
 }
 
-// GetUserFromCookie extracts the authenticated user from the HTTP request cookie.
+// GetUserFromCookie extracts the authenticated user from the HTTP request cookie or Authorization header.
 // It supports both the current numeric user ID based tokens and older email-based tokens.
 func GetUserFromCookie(r *http.Request, db *gorm.DB, jwtKey []byte) (*models.User, error) {
-	cookie, err := r.Cookie("spendly_token")
-	if err != nil {
-		return nil, err
+	var tokenStr string
+
+	// 1. Try spendly_token cookie
+	if cookie, err := r.Cookie("spendly_token"); err == nil && cookie.Value != "" {
+		tokenStr = cookie.Value
+	}
+
+	// 2. Fall back to Authorization: Bearer <token>
+	if tokenStr == "" {
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+			tokenStr = strings.TrimSpace(authHeader[7:])
+		}
+	}
+
+	if tokenStr == "" {
+		return nil, errors.New("no authentication token provided")
 	}
 
 	claims := &jwt.RegisteredClaims{}
-	token, err := jwt.ParseWithClaims(cookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
 	if err != nil || !token.Valid {

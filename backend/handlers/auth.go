@@ -174,6 +174,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Login successful",
 		"user":    user,
+		"token":   tokenString,
 	})
 }
 
