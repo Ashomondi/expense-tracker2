@@ -70,39 +70,78 @@ class MainActivity : FlutterActivity() {
 
     private fun queryMpesaMessages(limit: Int): List<Map<String, Any>> {
         val messages = mutableListOf<Map<String, Any>>()
-        val uri = Uri.parse("content://sms/inbox")
         val projection = arrayOf("_id", "address", "body", "date")
         
-        // Strict M-Pesa sender & content filtering to guarantee user privacy
-        val selection = "address LIKE ? OR address LIKE ? OR body LIKE ?"
-        val selectionArgs = arrayOf("%MPESA%", "%M-PESA%", "%Confirmed%Ksh%")
-        val sortOrder = "date DESC LIMIT $limit"
+        // Multi-keyword selection to catch M-Pesa messages across carriers & phone models
+        val selection = "address LIKE ? OR address LIKE ? OR address LIKE ? OR address LIKE ? OR body LIKE ? OR body LIKE ? OR body LIKE ?"
+        val selectionArgs = arrayOf(
+            "%MPESA%",
+            "%M-PESA%",
+            "%SAFARICOM%",
+            "%Safaricom%",
+            "%Confirmed%Ksh%",
+            "%sent to%",
+            "%paid to%"
+        )
+        // Standard sort order without SQL LIMIT keyword (which crashes on Android 10+ ContentResolver)
+        val sortOrder = "date DESC"
 
-        contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)?.use { cursor ->
-            val idIndex = cursor.getColumnIndex("_id")
-            val addressIndex = cursor.getColumnIndex("address")
-            val bodyIndex = cursor.getColumnIndex("body")
-            val dateIndex = cursor.getColumnIndex("date")
+        val urisToTry = listOf(
+            Uri.parse("content://sms/inbox"),
+            Uri.parse("content://sms")
+        )
 
-            while (cursor.moveToNext()) {
-                val id = if (idIndex != -1) cursor.getLong(idIndex) else 0L
-                val address = if (addressIndex != -1) cursor.getString(addressIndex) ?: "MPESA" else "MPESA"
-                val body = if (bodyIndex != -1) cursor.getString(bodyIndex) ?: "" else ""
-                val date = if (dateIndex != -1) cursor.getLong(dateIndex) else System.currentTimeMillis()
+        for (uri in urisToTry) {
+            try {
+                contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)?.use { cursor ->
+                    val idIndex = cursor.getColumnIndex("_id")
+                    val addressIndex = cursor.getColumnIndex("address")
+                    val bodyIndex = cursor.getColumnIndex("body")
+                    val dateIndex = cursor.getColumnIndex("date")
 
-                if (body.isNotBlank()) {
-                    messages.add(
-                        mapOf(
-                            "id" to id,
-                            "address" to address,
-                            "body" to body,
-                            "date" to date
-                        )
-                    )
+                    while (cursor.moveToNext() && messages.size < limit) {
+                        val id = if (idIndex != -1) cursor.getLong(idIndex) else 0L
+                        val address = if (addressIndex != -1) cursor.getString(addressIndex) ?: "MPESA" else "MPESA"
+                        val body = if (bodyIndex != -1) cursor.getString(bodyIndex) ?: "" else ""
+                        val date = if (dateIndex != -1) cursor.getLong(dateIndex) else System.currentTimeMillis()
+
+                        if (body.isNotBlank() && isLikelyMpesa(address, body)) {
+                            // Deduplicate within the batch by id or body hash
+                            if (messages.none { it["id"] == id }) {
+                                messages.add(
+                                    mapOf(
+                                        "id" to id,
+                                        "address" to address,
+                                        "body" to body,
+                                        "date" to date
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("SpendlySMS", "Error reading SMS from $uri: ${e.message}", e)
+            }
+
+            if (messages.isNotEmpty()) {
+                break
             }
         }
 
+        android.util.Log.i("SpendlySMS", "Scanned and found ${messages.size} M-Pesa SMS")
         return messages
+    }
+
+    private fun isLikelyMpesa(address: String, body: String): Boolean {
+        val addrUpper = address.uppercase()
+        val bodyUpper = body.uppercase()
+
+        if (addrUpper.contains("MPESA") || addrUpper.contains("M-PESA") || addrUpper.contains("SAFARICOM")) {
+            return true
+        }
+
+        return bodyUpper.contains("CONFIRMED") && 
+            (bodyUpper.contains("KSH") || bodyUpper.contains("SENT TO") || bodyUpper.contains("PAID TO") || bodyUpper.contains("RECEIVED"))
     }
 }
