@@ -85,6 +85,15 @@ func main() {
 	// 5. Setup Router
 	mux := http.NewServeMux()
 
+	// Health Check Endpoints
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok","app":"Spendly API"}`))
+	}
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/api/health", healthHandler)
+
 	// Authentication Endpoints
 	mux.HandleFunc("/api/signup", authHandler.SignUp)
 	mux.HandleFunc("/api/login", authHandler.Login)
