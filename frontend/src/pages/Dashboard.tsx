@@ -38,6 +38,17 @@ interface DashboardProps {
   selectedCurrency?: 'KES' | 'USD' | 'EUR' | 'GBP';
 }
 
+interface MonthlySummary {
+  total_amount: number;
+  average_daily_spend: number;
+  category_totals: Record<string, number>;
+  previous_month_total: number;
+  comparison_pct: number;
+  transaction_count: number;
+  month: number;
+  year: number;
+}
+
 const CATEGORY_COLORS: Record<string, { bg: string; dot: string; text: string; bar: string }> = {
   'Food & Drink': { bg: 'bg-amber-500/15', dot: 'bg-amber-400', text: 'text-amber-300', bar: 'bg-amber-400' },
   'Transport': { bg: 'bg-blue-500/15', dot: 'bg-blue-400', text: 'text-blue-300', bar: 'bg-blue-400' },
@@ -192,6 +203,7 @@ const parseQuickExpense = (input: string) => {
 export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = 'KES' }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [monthlySummary, setMonthlySummary] = useState<MonthlySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -310,10 +322,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     (sum, budget) => sum + convertCurrencyAmount(budget.amount, 'KES', displayCurrency),
     0,
   );
-  const budgetUsedPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
-  const budgetRemaining = totalBudget - totalSpent;
-  const budgetHealthPct = totalBudget > 0 ? Math.max(0, 100 - budgetUsedPct) : 0;
-
   const formattedMonth = new Intl.DateTimeFormat('en-KE', {
     month: 'long',
     year: 'numeric',
@@ -345,21 +353,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
     }
   };
 
+  const fetchMonthlySummary = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/expenses/summary`, {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data: MonthlySummary = await res.json();
+        setMonthlySummary(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch monthly summary:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchExpenses();
     fetchBudgets();
+    fetchMonthlySummary();
   }, []);
 
-  const budgetCategories = budgets.map((budget) => {
-    const spent = currentMonthExpenses
-      .filter((expense) => expense.category === budget.category)
-      .reduce(
-        (sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency),
-        0,
-      );
-    const total = convertCurrencyAmount(budget.amount, 'KES', displayCurrency);
-    return { name: budget.category, spent, total, pct: total > 0 ? Math.round((spent / total) * 100) : 0 };
-  });
+  const summaryTotalSpent = monthlySummary?.total_amount ?? totalSpent;
+  const summaryAverageSpend = monthlySummary?.average_daily_spend ?? 0;
+  const summaryTransactions = monthlySummary?.transaction_count ?? currentMonthExpenses.length;
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousMonthTotal = expenses
+    .filter((expense) => {
+      const date = new Date(expense.date);
+      return date.getFullYear() === previousMonth.getFullYear() && date.getMonth() === previousMonth.getMonth();
+    })
+    .reduce((sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency), 0);
+  const spendingChange = previousMonthTotal > 0
+    ? Math.round(((totalSpent - previousMonthTotal) / previousMonthTotal) * 100)
+    : null;
+  const summaryComparison = monthlySummary?.comparison_pct ?? (spendingChange ?? 0);
+  const currentMonthTransactions = summaryTransactions;
+
+  const summaryBudgetUsedPct = totalBudget > 0 ? Math.round((summaryTotalSpent / totalBudget) * 100) : 0;
+  const summaryBudgetRemaining = totalBudget - summaryTotalSpent;
+  const summaryBudgetHealthPct = totalBudget > 0 ? Math.max(0, 100 - summaryBudgetUsedPct) : 0;
 
   const monthlySpending = Array.from({ length: 6 }, (_, index) => {
     const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
@@ -382,18 +416,101 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
   }));
   const chartLine = chartPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
   const chartArea = `${chartLine} L ${chartPoints[chartPoints.length - 1].x} 190 L ${chartPoints[0].x} 190 Z`;
-  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const previousMonthTotal = expenses
-    .filter((expense) => {
-      const date = new Date(expense.date);
-      return date.getFullYear() === previousMonth.getFullYear() && date.getMonth() === previousMonth.getMonth();
-    })
-    .reduce((sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency), 0);
-  const spendingChange = previousMonthTotal > 0
-    ? Math.round(((totalSpent - previousMonthTotal) / previousMonthTotal) * 100)
-    : null;
-
   const currentDateLabel = formattedMonth.toUpperCase();
+
+  const budgetCategories = budgets.map((budget) => {
+    const spent = currentMonthExpenses
+      .filter((expense) => expense.category === budget.category)
+      .reduce(
+        (sum, expense) => sum + convertCurrencyAmount(expense.amount, expense.currency || 'KES', displayCurrency),
+        0,
+      );
+    const total = convertCurrencyAmount(budget.amount, 'KES', displayCurrency);
+    return { name: budget.category, spent, total, pct: total > 0 ? Math.round((spent / total) * 100) : 0 };
+  });
+
+  const categoryBreakdown = Object.entries(monthlySummary?.category_totals ?? {})
+    .map(([name, total]) => {
+      const existingBudget = budgets.find((budget) => budget.category === name);
+      const totalBudgetValue = existingBudget ? convertCurrencyAmount(existingBudget.amount, 'KES', displayCurrency) : 0;
+      return {
+        name,
+        spent: total,
+        total: totalBudgetValue,
+        pct: summaryTotalSpent > 0 ? Math.round((total / summaryTotalSpent) * 100) : 0,
+      };
+    })
+    .sort((a, b) => b.spent - a.spent);
+
+  const visibleCategoryBreakdown = categoryBreakdown.length > 0 ? categoryBreakdown : budgetCategories;
+
+  const topCategory = visibleCategoryBreakdown[0];
+  const overBudgetCategory = visibleCategoryBreakdown.find((cat) => cat.total > 0 && cat.spent > cat.total);
+  const monthTrendLabel = summaryComparison === 0
+    ? 'Spending is stable compared with last month.'
+    : summaryComparison > 0
+      ? `You spent ${Math.abs(summaryComparison).toFixed(0)}% more than last month.`
+      : `You spent ${Math.abs(summaryComparison).toFixed(0)}% less than last month.`;
+
+  const insights = [
+    topCategory
+      ? {
+          title: `${topCategory.name} is your biggest spend`,
+          detail: `${formatCurrency(topCategory.spent, newCurrency)} this month (${topCategory.pct}% of total spend).`,
+          tone: 'info',
+        }
+      : {
+          title: 'No major spending patterns yet',
+          detail: 'Add a few expenses to see your monthly trends.',
+          tone: 'info',
+        },
+    overBudgetCategory
+      ? {
+          title: `${overBudgetCategory.name} is over budget`,
+          detail: `${formatCurrency(overBudgetCategory.spent, newCurrency)} spent against ${formatCurrency(overBudgetCategory.total, newCurrency)} budget.`,
+          tone: 'warning',
+        }
+      : {
+          title: 'Budget is holding up',
+          detail: 'Your current monthly spend is within your set category limits.',
+          tone: 'success',
+        },
+    {
+      title: 'Monthly trend',
+      detail: monthTrendLabel,
+      tone: summaryComparison > 0 ? 'warning' : 'success',
+    },
+  ];
+
+  const adviceItems = [
+    overBudgetCategory
+      ? {
+          title: `Trim ${overBudgetCategory.name}`,
+          detail: `You are ${formatCurrency(overBudgetCategory.spent - overBudgetCategory.total, newCurrency)} above budget in ${overBudgetCategory.name}. Reduce discretionary spend by that amount to stay on track.`,
+        }
+      : {
+          title: 'Keep your momentum',
+          detail: 'Your monthly spend is within plan. Keep non-essential spending flat for the rest of the month to protect your savings.',
+        },
+    summaryComparison > 0
+      ? {
+          title: 'Watch the monthly trend',
+          detail: `Spending is ${Math.abs(summaryComparison).toFixed(0)}% higher than last month. Focus on reducing the biggest category first.`,
+        }
+      : {
+          title: 'Spending trend is healthy',
+          detail: 'Your spending is stable or lower than last month. Keep your current pace and maintain your budget discipline.',
+        },
+    topCategory
+      ? {
+          title: `Prioritize ${topCategory.name}`,
+          detail: `${formatCurrency(topCategory.spent, newCurrency)} is your largest category this month. Consider setting a smaller cap for this category next cycle.`,
+        }
+      : {
+          title: 'Build stronger habits',
+          detail: 'Start with a simple weekly cap for food, transport, and entertainment to keep spending predictable.',
+        },
+  ];
 
   return (
     <main className="dashboard-container">
@@ -444,28 +561,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
           </div>
           <div className="metric-content">
             <div className="metric-value">
-              {formatCurrency(totalSpent, newCurrency)}
+              {formatCurrency(summaryTotalSpent, newCurrency)}
             </div>
             <div className="metric-change">
               <TrendingUp size={12} strokeWidth={2.5} aria-hidden />
-              {spendingChange === null ? 'No previous month data' : `${spendingChange > 0 ? '+' : ''}${spendingChange}% vs last month`}
+              {summaryComparison === 0 ? 'No previous month data' : `${summaryComparison > 0 ? '+' : ''}${summaryComparison}% vs last month`}
             </div>
           </div>
         </div>
 
-        {/* Budget Used */}
+        {/* Average Daily Spend */}
         <div className="dashboard-metric-card">
           <div className="metric-header">
-            <span className="metric-label">Budget Used</span>
+            <span className="metric-label">Avg. Daily Spend</span>
             <div className="metric-icon">
               <Target size={16} strokeWidth={2.2} aria-hidden />
             </div>
           </div>
           <div className="metric-content">
-            <div className="metric-value">{budgetUsedPct}%</div>
+            <div className="metric-value">
+              {formatCurrency(summaryAverageSpend, newCurrency)}
+            </div>
             <div className="metric-change">
               <Activity size={12} strokeWidth={2.5} aria-hidden />
-              {totalBudget > 0 ? `${formatCurrency(budgetRemaining, newCurrency)} ${budgetRemaining >= 0 ? 'remaining' : 'over budget'}` : 'Set budgets to track spending'}
+              {totalBudget > 0 ? `${formatCurrency(summaryBudgetRemaining, newCurrency)} ${summaryBudgetRemaining >= 0 ? 'remaining' : 'over budget'}` : 'Set budgets to track spending'}
             </div>
           </div>
         </div>
@@ -479,10 +598,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
             </div>
           </div>
           <div className="metric-content">
-            <div className="metric-value">{expenses.length}</div>
+            <div className="metric-value">{summaryTransactions}</div>
             <div className="metric-change">
               <TrendingUp size={12} strokeWidth={2.5} aria-hidden />
-              {currentMonthExpenses.length} this month
+              {currentMonthTransactions} this month
             </div>
           </div>
         </div>
@@ -496,10 +615,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
             </div>
           </div>
           <div className="metric-content">
-            <div className="metric-value">{budgetHealthPct}%</div>
+            <div className="metric-value">{summaryBudgetHealthPct}%</div>
             <div className="metric-change">
               <Activity size={12} strokeWidth={2.5} aria-hidden />
-              {totalBudget === 0 ? 'No budgets set' : budgetUsedPct >= 100 ? 'Over budget' : 'On track'}
+              {totalBudget === 0 ? 'No budgets set' : summaryBudgetUsedPct >= 100 ? 'Over budget' : 'On track'}
             </div>
           </div>
         </div>
@@ -557,9 +676,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
 
         {/* Budget Overview Right Sidebar */}
         <div className="dashboard-budget-overview">
-          <h3 className="budget-title">Budget Overview</h3>
+          <h3 className="budget-title">Spending by Category</h3>
           <div className="budget-items">
-            {budgetCategories.map((cat) => {
+            {visibleCategoryBreakdown.map((cat) => {
               const color = CATEGORY_COLORS[cat.name] || DEFAULT_COLOR;
               return (
                 <div key={cat.name} className="budget-item">
@@ -575,12 +694,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, selectedCurrency = '
                   </div>
                   <div className="budget-range">
                     <span>{formatCurrency(cat.spent, newCurrency)}</span>
-                    <span>{formatCurrency(cat.total, newCurrency)}</span>
+                    <span>{cat.total > 0 ? formatCurrency(cat.total, newCurrency) : 'Budget'}</span>
                   </div>
                 </div>
               );
             })}
           </div>
+        </div>
+      </div>
+
+      <div className="dashboard-insights-panel">
+        <div className="insights-header">
+          <h3 className="insights-title">Money Insights</h3>
+        </div>
+        <div className="insights-list">
+          {insights.map((insight) => (
+            <div key={insight.title} className={`insight-item insight-${insight.tone}`}>
+              <div className="insight-bullet" />
+              <div>
+                <p className="insight-title">{insight.title}</p>
+                <p className="insight-detail">{insight.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="dashboard-advice-panel">
+        <div className="insights-header">
+          <h3 className="insights-title">Budget Advice</h3>
+        </div>
+        <div className="advice-list">
+          {adviceItems.map((item) => (
+            <div key={item.title} className="advice-item">
+              <div className="advice-bullet" />
+              <div>
+                <p className="advice-title">{item.title}</p>
+                <p className="advice-detail">{item.detail}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
