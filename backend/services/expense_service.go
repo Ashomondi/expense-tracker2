@@ -141,10 +141,10 @@ func (s *expenseService) GetExpensesByDateRange(userID uint, startDate, endDate 
 }
 
 func (s *expenseService) GetMonthlySummary(userID uint, year int, month int) (map[string]interface{}, error) {
-	startDate := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-	endDate := startDate.AddDate(0, 1, 0).Add(-time.Second)
+	monthStart := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	monthEnd := monthStart.AddDate(0, 1, 0).Add(-time.Second)
 
-	expenses, err := s.expenseRepo.FindByUserIDAndDateRange(userID, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
+	expenses, err := s.expenseRepo.FindByUserIDAndDateRange(userID, monthStart.Format("2006-01-02"), monthEnd.Format("2006-01-02"))
 	if err != nil {
 		return nil, err
 	}
@@ -156,12 +156,37 @@ func (s *expenseService) GetMonthlySummary(userID uint, year int, month int) (ma
 		categoryTotals[exp.Category] += exp.Amount
 	}
 
+	previousMonth := monthStart.AddDate(0, -1, 0)
+	previousMonthEnd := previousMonth.AddDate(0, 1, 0).Add(-time.Second)
+	previousExpenses, err := s.expenseRepo.FindByUserIDAndDateRange(userID, previousMonth.Format("2006-01-02"), previousMonthEnd.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
+	}
+
+	var previousMonthTotal float64
+	for _, exp := range previousExpenses {
+		previousMonthTotal += exp.Amount
+	}
+
+	averageDailySpend := 0.0
+	if monthEnd.Day() > 0 {
+		averageDailySpend = total / float64(monthEnd.Day())
+	}
+
+	comparisonPct := 0.0
+	if previousMonthTotal > 0 {
+		comparisonPct = ((total - previousMonthTotal) / previousMonthTotal) * 100
+	}
+
 	return map[string]interface{}{
-		"total":            total,
-		"category_totals":  categoryTotals,
-		"transaction_count": len(expenses),
-		"month":            month,
-		"year":             year,
+		"total":                total,
+		"average_daily_spend":  averageDailySpend,
+		"category_totals":      categoryTotals,
+		"transaction_count":    len(expenses),
+		"month":                month,
+		"year":                 year,
+		"previous_month_total": previousMonthTotal,
+		"comparison_pct":       comparisonPct,
 	}, nil
 }
 
