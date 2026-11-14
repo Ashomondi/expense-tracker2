@@ -26,3 +26,16 @@ type CreateExpenseInput struct {
 	Currency string  `json:"currency"`
 	Date     string  `json:"date"`
 }
+
+type MonthlySummaryResponse struct {
+	TotalAmount          float64            `json:"total_amount"`
+	AverageDailySpend    float64            `json:"average_daily_spend"`
+	CategoryTotals       map[string]float64 `json:"category_totals"`
+	PreviousMonthTotal   float64            `json:"previous_month_total"`
+	ComparisonPct        float64            `json:"comparison_pct"`
+	MonthOverMonthChange float64            `json:"month_over_month_change"`
+	TransactionCount     int                `json:"transaction_count"`
+	TotalCount           int64              `json:"total_count"`
+	Month                int                `json:"month"`
+	Year                 int                `json:"year"`
+}
