@@ -563,3 +563,127 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.dashboard-insights-panel {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 1.5rem;
+}
+
+.insights-header {
+  margin-bottom: 1rem;
+}
+
+.insights-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.insights-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.insight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 1rem;
+  padding: 0.875rem 1rem;
+}
+
+.insight-item.insight-info {
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.insight-item.insight-warning {
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.insight-item.insight-success {
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.insight-bullet {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  margin-top: 0.45rem;
+  background: #3B82F6;
+  flex-shrink: 0;
+}
+
+.insight-item.insight-warning .insight-bullet {
+  background: #fbbf24;
+}
+
+.insight-item.insight-success .insight-bullet {
+  background: #22c55e;
+}
+
+.insight-title {
+  color: #FFFFFF;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.insight-detail {
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.dashboard-advice-panel {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 1.5rem;
+}
+
+.advice-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.advice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background-color: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 1rem;
+  padding: 0.875rem 1rem;
+}
+
+.advice-bullet {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: #3B82F6;
+  margin-top: 0.45rem;
+  flex-shrink: 0;
+}
+
+.advice-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.advice-detail {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
