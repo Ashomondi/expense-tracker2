@@ -137,3 +137,73 @@ func (h *ExpenseHandler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Expense deleted"})
 }
+
+// GetMonthlySummary godoc
+// @Summary Get monthly summary of user's expenses
+// @Description Get current month's totals, average daily spend, category totals, and month-over-month comparisons
+// @Tags expenses
+// @Accept json
+// @Produce json
+// @Success 200 {object} models.MonthlySummaryResponse
+// @Router /expenses/summary [get]
+func (h *ExpenseHandler) GetMonthlySummary(w http.ResponseWriter, r *http.Request) {
+	user, err := utils.GetUserFromCookie(r, h.DB, h.JWTKey)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		return
+	}
+
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Second)
+
+	var expenses []models.Expense
+	if err := h.DB.Where("user_id = ? AND date BETWEEN ? AND ?", user.ID, startOfMonth, endOfMonth).Order("date asc").Find(&expenses).Error; err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to fetch monthly summary"})
+		return
+	}
+
+	var totalAmount float64
+	categoryTotals := make(map[string]float64)
+	for _, expense := range expenses {
+		totalAmount += expense.Amount
+		categoryTotals[expense.Category] += expense.Amount
+	}
+
+	previousMonthStart := startOfMonth.AddDate(0, -1, 0)
+	previousMonthEnd := previousMonthStart.AddDate(0, 1, 0).Add(-time.Second)
+	var previousMonthTotal float64
+	if err := h.DB.Model(&models.Expense{}).Where("user_id = ? AND date BETWEEN ? AND ?", user.ID, previousMonthStart, previousMonthEnd).Select("COALESCE(SUM(amount), 0)").Scan(&previousMonthTotal).Error; err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to compute previous month comparison"})
+		return
+	}
+
+	averageDailySpend := 0.0
+	if endOfMonth.Day() > 0 {
+		averageDailySpend = totalAmount / float64(endOfMonth.Day())
+	}
+
+	comparisonPct := 0.0
+	if previousMonthTotal > 0 {
+		comparisonPct = ((totalAmount - previousMonthTotal) / previousMonthTotal) * 100
+	}
+
+	response := models.MonthlySummaryResponse{
+		TotalAmount:          totalAmount,
+		AverageDailySpend:    averageDailySpend,
+		CategoryTotals:       categoryTotals,
+		PreviousMonthTotal:   previousMonthTotal,
+		ComparisonPct:        comparisonPct,
+		MonthOverMonthChange: totalAmount - previousMonthTotal,
+		TransactionCount:     len(expenses),
+		TotalCount:           int64(len(expenses)),
+		Month:                int(now.Month()),
+		Year:                 now.Year(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
